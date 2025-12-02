@@ -212,9 +212,8 @@ export default function ChatPage() {
           typingNames={typingNames}
         />
         
-        <ChatInput 
-          onSendMessage={handleSendMessage} 
-          disabled={!isConnected}
+        <ChatInput
+          onSendMessage={handleSendMessage}
           onInputChange={() => sendTyping()}
         />
       </div>
