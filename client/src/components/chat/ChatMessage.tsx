@@ -57,9 +57,9 @@ export default function ChatMessage({ message, showSender = true }: ChatMessageP
     >
       {showSender && (
         <Avatar className="w-8 h-8 flex-shrink-0">
-          <AvatarImage src={message.senderAvatar} alt={message.senderName} />
-          <AvatarFallback className="text-xs bg-muted">
-            {initials}
+          {/* Show emoji directly if available, otherwise show initials */}
+          <AvatarFallback className="text-xs font-semibold">
+            {message.senderAvatar || initials}
           </AvatarFallback>
         </Avatar>
       )}

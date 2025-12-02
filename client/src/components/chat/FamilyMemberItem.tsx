@@ -38,9 +38,9 @@ export default function FamilyMemberItem({
     >
       <div className="relative">
         <Avatar className="w-10 h-10">
-          <AvatarImage src={member.avatar} alt={member.name} />
-          <AvatarFallback className="bg-muted text-sm">
-            {initials}
+          {/* Show emoji directly if available, otherwise show initials */}
+          <AvatarFallback className="bg-muted text-lg font-semibold">
+            {member.avatar || initials}
           </AvatarFallback>
         </Avatar>
         {member.isOnline !== undefined && (
