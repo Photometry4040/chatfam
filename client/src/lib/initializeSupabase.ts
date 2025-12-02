@@ -10,29 +10,13 @@ interface InitializeResult {
 
 export async function initializeSupabase(): Promise<InitializeResult> {
   try {
-    // First, try to get current user
-    let { data: sessionData } = await supabase.auth.getSession();
-
-    // If no session, do anonymous sign in
-    if (!sessionData?.session) {
-      const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
-      if (authError) {
-        console.error("Anonymous sign in error:", authError);
-        return {
-          familyGroupId: FAMILY_GROUP_ID,
-          success: false,
-          message: `Authentication failed: ${authError.message}`,
-        };
-      }
-      sessionData = { session: authData.session };
-    }
-
+    // Get current authenticated user
     const { data: user } = await supabase.auth.getUser();
     if (!user?.user) {
       return {
         familyGroupId: FAMILY_GROUP_ID,
         success: false,
-        message: "User not authenticated after sign in",
+        message: "User not authenticated",
       };
     }
 
