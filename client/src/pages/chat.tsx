@@ -183,7 +183,7 @@ export default function ChatPage() {
             .single();
 
           const isOwn = msg.sender_profile_id === selectedMemberId;
-          // console.log(`🔄 Refresh - Message: "${msg.content.substring(0, 20)}..." | sender_profile_id: ${msg.sender_profile_id} | selectedMemberId: ${selectedMemberId} | isOwn: ${isOwn}`);
+          console.log(`🔄 Refresh - Message: "${msg.content.substring(0, 20)}..." | sender_profile_id: ${msg.sender_profile_id} | selectedMemberId: ${selectedMemberId} | isOwn: ${isOwn}`);
 
           messagesWithNames.push({
             id: msg.id,
@@ -223,7 +223,7 @@ export default function ChatPage() {
 
   const handleNewMessage = useCallback((serverMessage: any) => {
     const isOwn = serverMessage.senderProfileId === selectedMemberId;
-    // console.log(`💬 New message: "${serverMessage.content.substring(0, 20)}..." | senderProfileId: ${serverMessage.senderProfileId} | selectedMemberId: ${selectedMemberId} | isOwn: ${isOwn}`);
+    console.log(`💬 New message: "${serverMessage.content.substring(0, 20)}..." | senderProfileId: ${serverMessage.senderProfileId} | selectedMemberId: ${selectedMemberId} | isOwn: ${isOwn}`);
 
     const message: Message = {
       id: serverMessage.id,
@@ -254,7 +254,7 @@ export default function ChatPage() {
   const handleRoomHistory = useCallback((conversationId: string, serverMessages: any[]) => {
     const formattedMessages: Message[] = serverMessages.map((m) => {
       const isOwn = m.senderProfileId === selectedMemberId;
-      // console.log(`📨 Message: "${m.content.substring(0, 20)}..." | senderProfileId: ${m.senderProfileId} | selectedMemberId: ${selectedMemberId} | isOwn: ${isOwn}`);
+      console.log(`📨 Message: "${m.content.substring(0, 20)}..." | senderProfileId: ${m.senderProfileId} | selectedMemberId: ${selectedMemberId} | isOwn: ${isOwn}`);
       return {
         id: m.id,
         content: m.content,
