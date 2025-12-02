@@ -5,6 +5,7 @@ import ChatInput from "@/components/chat/ChatInput";
 import MessageList from "@/components/chat/MessageList";
 import FamilySidebar from "@/components/chat/FamilySidebar";
 import SearchMessages from "@/components/chat/SearchMessages";
+import ConversationHeader from "@/components/chat/ConversationHeader";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
 import { supabase } from "@/lib/supabase";
 import { initializeSupabase } from "@/lib/initializeSupabase";
@@ -12,6 +13,13 @@ import type { Message } from "@/components/chat/ChatMessage";
 import type { FamilyMember } from "@/components/chat/FamilyMemberItem";
 
 const FAMILY_GROUP_ID = "a0000000-0000-0000-0000-000000000001"; // Default family group UUID
+
+// Type definition for Conversation
+interface Conversation {
+  id: string;
+  title: string;
+  created_at: string;
+}
 
 // Fetch family member roles from chat_profiles
 async function fetchFamilyMembers(familyGroupId: string): Promise<FamilyMember[]> {
@@ -54,6 +62,8 @@ export default function ChatPage() {
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [currentUserName, setCurrentUserName] = useState<string>("");
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [selectedConversationId, setSelectedConversationId] = useState<string>("");
 
   // Get current user info and initialize selected member
   useEffect(() => {
@@ -78,6 +88,60 @@ export default function ChatPage() {
       console.error("Failed to initialize Supabase:", error);
     });
   }, []);
+
+  // Fetch conversations from database
+  const fetchConversations = useCallback(async () => {
+    try {
+      const { data } = await supabase
+        .from("chat_conversations")
+        .select("id, title, created_at")
+        .eq("family_group_id", FAMILY_GROUP_ID)
+        .order("created_at", { ascending: false });
+
+      setConversations(data || []);
+    } catch (error) {
+      console.error("Error fetching conversations:", error);
+    }
+  }, []);
+
+  // Create a new conversation
+  const createConversation = useCallback(async (title: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("chat_conversations")
+        .insert({
+          family_group_id: FAMILY_GROUP_ID,
+          title,
+          created_by: currentUserId,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error creating conversation:", error);
+        return;
+      }
+
+      if (data) {
+        setConversations((prev) => [data, ...prev]);
+        setSelectedConversationId(data.id);
+      }
+    } catch (error) {
+      console.error("Error in createConversation:", error);
+    }
+  }, [currentUserId]);
+
+  // Fetch conversations on mount
+  useEffect(() => {
+    fetchConversations();
+  }, [fetchConversations]);
+
+  // Set default selected conversation when conversations load
+  useEffect(() => {
+    if (conversations.length > 0 && !selectedConversationId) {
+      setSelectedConversationId(conversations[0].id);
+    }
+  }, [conversations, selectedConversationId]);
 
   // Set default selected member when members load
   useEffect(() => {
@@ -134,6 +198,7 @@ export default function ChatPage() {
     userId: currentUserId,
     userName: currentUserName,
     senderProfileId: selectedMemberId,
+    conversationId: selectedConversationId,
     onMessage: handleNewMessage,
     onRoomHistory: handleRoomHistory,
     onTyping: (userId, userName) => {
@@ -203,7 +268,14 @@ export default function ChatPage() {
           memberCount={memberCount}
           onMenuClick={() => setSidebarOpen(true)}
         />
-        
+
+        <ConversationHeader
+          conversations={conversations}
+          selectedConversationId={selectedConversationId}
+          onSelectConversation={setSelectedConversationId}
+          onCreateConversation={createConversation}
+        />
+
         <SearchMessages
           query={searchQuery}
           onQueryChange={setSearchQuery}

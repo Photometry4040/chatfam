@@ -7,6 +7,7 @@ interface UseSupabaseRealtimeOptions {
   userId: string;
   userName: string;
   senderProfileId: string;
+  conversationId: string;
   onMessage: (message: Message) => void;
   onRoomHistory: (roomId: string, messages: Message[]) => void;
   onTyping?: (userId: string, userName: string) => void;
@@ -17,6 +18,7 @@ export function useSupabaseRealtime({
   userId,
   userName,
   senderProfileId,
+  conversationId,
   onMessage,
   onRoomHistory,
   onTyping,
@@ -50,6 +52,7 @@ export function useSupabaseRealtime({
         `
         )
         .eq("family_group_id", familyGroupId)
+        .eq("conversation_id", conversationId)
         .order("created_at", { ascending: true })
         .limit(100);
 
@@ -84,14 +87,14 @@ export function useSupabaseRealtime({
 
       // Subscribe to new messages
       const messagesSubscription = supabase
-        .channel(`messages:${familyGroupId}`)
+        .channel(`messages:${familyGroupId}:${conversationId}`)
         .on(
           "postgres_changes",
           {
             event: "*",
             schema: "public",
             table: "chat_messages",
-            filter: `family_group_id=eq.${familyGroupId}`,
+            filter: `family_group_id=eq.${familyGroupId},conversation_id=eq.${conversationId}`,
           },
           async (payload: any) => {
             if (payload.eventType === "INSERT") {
@@ -164,7 +167,7 @@ export function useSupabaseRealtime({
       console.error("Error setting up subscriptions:", error);
       setIsConnected(false);
     }
-  }, [familyGroupId, userId, senderProfileId]);
+  }, [familyGroupId, userId, senderProfileId, conversationId]);
 
   // Initialize subscriptions
   useEffect(() => {
@@ -189,6 +192,7 @@ export function useSupabaseRealtime({
             family_group_id: familyGroupId,
             user_id: userId,
             sender_profile_id: senderProfileId,
+            conversation_id: conversationId,
             content,
             message_type: "text",
           })
@@ -235,7 +239,7 @@ export function useSupabaseRealtime({
         console.error("Error in sendMessage:", error);
       }
     },
-    [familyGroupId, userId, userName, senderProfileId]
+    [familyGroupId, userId, userName, senderProfileId, conversationId]
   );
 
   const sendTyping = useCallback(async () => {
