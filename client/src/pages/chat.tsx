@@ -171,9 +171,12 @@ export default function ChatPage() {
 
     console.log("[handleNewMessage] message object:", message);
 
+    // Capture conversationKey before setState
+    const conversationKey = selectedConversationId;
+    console.log("[handleNewMessage] Captured conversationKey:", conversationKey);
+
     setMessages((prev) => {
-      const conversationKey = selectedConversationId;
-      console.log("[setMessages] conversationKey:", conversationKey, "prev state:", Object.keys(prev));
+      console.log("[setMessages] Current prev state keys:", Object.keys(prev));
       const conversationMessages = prev[conversationKey] || [];
       console.log("[setMessages] conversationMessages count:", conversationMessages.length);
       const exists = conversationMessages.some((m) => m.id === message.id);
@@ -183,11 +186,14 @@ export default function ChatPage() {
         return prev;
       }
 
-      console.log("[setMessages] Adding new message to conversation");
-      return {
+      console.log("[setMessages] Creating new state with message added");
+      const newState = {
         ...prev,
         [conversationKey]: [...conversationMessages, message],
       };
+      console.log("[setMessages] New state keys:", Object.keys(newState));
+      console.log("[setMessages] New message count for", conversationKey, ":", newState[conversationKey].length);
+      return newState;
     });
   }, [selectedMemberId, selectedConversationId]);
 
