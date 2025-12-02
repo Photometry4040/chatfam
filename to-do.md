@@ -1,6 +1,6 @@
 ## 🎉 최근 완료된 작업들
 
-### ✅ Phase 1: 다중 대화(Conversation/Thread) 기능 완성
+### ✅ Phase 1: 다중 대화(Conversation/Thread) 기능 + 메시지 발신자 표시 완성
 - [x] **새로운 대화 시작** 기능 구현
   - 날짜별 대화 스레드 생성 가능 (예: "12월 2일", "12월 3일")
   - 파일: `ConversationHeader.tsx`, `ConversationCreateModal.tsx`
@@ -13,6 +13,11 @@
 - [x] 메시지 정렬 버그 수정 ⭐
   - `sender_profile_id` (chat_profiles.id) 기반 isOwn 계산
   - 모든 가족 구성원 메시지 올바르게 표시
+- [x] 메시지 발신자 표시 수정 ⭐⭐
+  - 문제: 모든 메시지가 "영준"으로만 표시됨
+  - 원인: Profile lookup 시 `user_id` 대신 `sender_profile_id` 사용해야 함
+  - 해결: `useSupabaseRealtime.ts`, `chat.tsx` profile 조회 쿼리 수정
+  - 결과: 모든 가족 구성원의 이름이 정확하게 표시됨 ✅
 - [x] 콘솔 로그 정리
   - 불필요한 디버깅 로그 제거 (📨 💬 🔄)
   - 필수 로그만 유지 (🔐 오류, 연결 상태)
@@ -24,28 +29,32 @@
 - `25478fa` - Fix message alignment by using sender_profile_id
 - `f5a34d3` - Clean up console logs
 - `537b227` - Fix PATCH 403 Forbidden error
+- `b8fc83e` - Fix sender name display by using correct profile lookup
+- `8cd0279` - Clean up debug logs - remove temporary debugging output
 
 ---
 
-## 🔥 다음 우선순위 작업
+## 🔥 Phase 2: 실시간 상호작용 기능 추가 (진행 중)
 
 ### Phase 2: 실용적인 기능 추가 (추천 순서)
 
-#### 1. 메시지 읽음 표시 개선 (⭐ 높은 우선순위)
+#### 1. 메시지 읽음 표시 개선 (⭐ 높은 우선순위) - 🚀 다음 진행 예정
 - [x] 현재: 더미 데이터인 ✓✓ 표시 존재
 - [ ] `chat_read_receipts` 테이블 추가
 - [ ] 각 가족 구성원의 마지막 읽은 메시지 추적
 - [ ] 실시간 읽음 상태 업데이트
 - 난이도: ⭐⭐ (중간)
 - 예상 시간: 3-4시간
+- **상태**: 계획 수립 단계
 
-#### 2. 이모지 반응 (⭐ 가장 간단)
+#### 2. 이모지 반응 (⭐ 가장 간단) - 🚀 다음 진행 예정
 - [ ] 메시지 길게 눌러 반응 가능
 - [ ] `chat_message_reactions` 테이블 추가
 - [ ] 👍 ❤️ 😂 🎉 등 기본 이모지 지원
 - [ ] Realtime 반응 업데이트
 - 난이도: ⭐⭐ (중간)
 - 예상 시간: 2-3시간
+- **상태**: 계획 수립 단계
 
 #### 3. 사진/파일 공유
 - [ ] Supabase Storage 업로드
@@ -181,15 +190,23 @@
 
 ## 📊 현재 상태
 
-✅ **완료됨:**
-- 다중 대화 스레드 기능
-- 메시지 정렬 버그 수정
-- 실시간 업데이트 (Realtime + Auto-polling)
-- 콘솔 로그 정리
-- RLS 정책 에러 수정
+✅ **Phase 1 완료 (100%):**
+- 다중 대화 스레드 기능 ✅
+- 메시지 정렬 버그 수정 ✅
+- 메시지 발신자 표시 수정 ✅ (모든 가족 구성원 이름 정확하게 표시)
+- 실시간 업데이트 (Realtime + Auto-polling) ✅
+- 콘솔 로그 정리 ✅
+- RLS 정책 에러 수정 ✅
 
-🚀 **배포 상태:**
-- GitHub: ✅ 최신 커밋 푸시됨
-- Vercel: ✅ 자동 배포 진행 중
+🚀 **Phase 2 진행 중 (계획 단계):**
+- 메시지 읽음 표시 개선 - 📋 계획 수립 중
+- 이모지 반응 - 📋 계획 수립 중
 
-어떤 기능을 먼저 구현해보고 싶으신가요? 😊
+🌐 **배포 상태:**
+- GitHub: ✅ 최신 커밋 푸시됨 (`8cd0279`)
+- Vercel: ✅ 자동 배포 완료 및 검증됨
+- 배포된 앱: 메시지 발신자 표시가 정상 작동함 ✅
+
+**📌 다음 단계:**
+1. 메시지 읽음 표시 개선 기능 구현
+2. 이모지 반응 기능 구현
