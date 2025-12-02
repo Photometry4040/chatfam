@@ -5,12 +5,13 @@ import ChatInput from "@/components/chat/ChatInput";
 import MessageList from "@/components/chat/MessageList";
 import FamilySidebar from "@/components/chat/FamilySidebar";
 import SearchMessages from "@/components/chat/SearchMessages";
-import { useWebSocket } from "@/hooks/useWebSocket";
+import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
 import type { Message } from "@/components/chat/ChatMessage";
 import type { FamilyMember } from "@/components/chat/FamilyMemberItem";
 
 const CURRENT_USER_ID = "me";
 const CURRENT_USER_NAME = "나";
+const FAMILY_GROUP_ID = "family-main"; // Default family group
 
 export default function ChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -63,10 +64,10 @@ export default function ChatPage() {
     }));
   }, []);
 
-  const { isConnected, sendMessage, sendTyping } = useWebSocket({
+  const { isConnected, sendMessage, sendTyping } = useSupabaseRealtime({
+    familyGroupId: FAMILY_GROUP_ID,
     userId: CURRENT_USER_ID,
     userName: CURRENT_USER_NAME,
-    roomId: selectedMemberId,
     onMessage: handleNewMessage,
     onRoomHistory: handleRoomHistory,
     onTyping: (userId, userName) => {
