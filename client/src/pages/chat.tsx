@@ -6,12 +6,34 @@ import MessageList from "@/components/chat/MessageList";
 import FamilySidebar from "@/components/chat/FamilySidebar";
 import SearchMessages from "@/components/chat/SearchMessages";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
+import { supabase } from "@/lib/supabase";
 import type { Message } from "@/components/chat/ChatMessage";
 import type { FamilyMember } from "@/components/chat/FamilyMemberItem";
 
 const CURRENT_USER_ID = "me";
 const CURRENT_USER_NAME = "나";
 const FAMILY_GROUP_ID = "family-main"; // Default family group
+
+// Fetch family members from Supabase
+async function fetchFamilyMembers(): Promise<FamilyMember[]> {
+  const { data, error } = await supabase
+    .from("chat_family_members")
+    .select("id, name:display_name, avatar:profile_image, is_online:online_status")
+    .eq("family_group_id", FAMILY_GROUP_ID)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("Failed to fetch family members:", error);
+    return [];
+  }
+
+  return (data || []).map(member => ({
+    id: member.id,
+    name: member.name || "Unknown",
+    avatar: member.avatar,
+    isOnline: member.is_online,
+  }));
+}
 
 export default function ChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -21,7 +43,9 @@ export default function ChatPage() {
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
 
   const { data: members = [] } = useQuery<FamilyMember[]>({
-    queryKey: ["/api/members"],
+    queryKey: ["family-members", FAMILY_GROUP_ID],
+    queryFn: fetchFamilyMembers,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   const handleNewMessage = useCallback((serverMessage: any) => {
