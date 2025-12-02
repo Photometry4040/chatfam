@@ -74,7 +74,7 @@ Preferred communication style: Simple, everyday language (Korean/한국어).
 - Family members: getFamilyMembers, getFamilyMember, createFamilyMember, updateOnlineStatus, updateLastMessage
 - Messages: getMessages, createMessage
 
-**Default Family Members**: group (가족 단체방), mom (엄마), dad (아빠), sister (누나), brother (형)
+**Default Family Members**: group (가족 단체방), mom (엄마), dad (아빠), sister (영신), brother (영준)
 
 ### Key Files
 

@@ -46,3 +46,7 @@ replit.nix
 .upm/
 .vercel
 .env*.local
+
+# Internal documentation (contains personal information)
+CLAUDE.md
+replit.md

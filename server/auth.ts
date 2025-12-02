@@ -6,9 +6,9 @@ const JWT_SECRET = process.env.SESSION_SECRET || "family-chat-secret-key";
 const FAMILY_ACCOUNTS = [
   { id: "user_mom", username: "mom", password: "mom123", name: "엄마" },
   { id: "user_dad", username: "dad", password: "dad123", name: "아빠" },
-  { id: "user_sister", username: "sister", password: "sister123", name: "누나" },
-  { id: "user_brother", username: "brother", password: "brother123", name: "형" },
-  { id: "user_me", username: "me", password: "me123", name: "나" },
+  { id: "user_brother1", username: "brother1", password: "brother1", name: "영신" },
+  { id: "user_brother2", username: "brother2", password: "brother2", name: "영준" },
+  { id: "user_sister", username: "sister", password: "sister123", name: "은지" },
 ];
 
 export function authenticateUser(

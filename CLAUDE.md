@@ -74,11 +74,11 @@ FamilyChatter/
 
 The application initializes with:
 - `group` - 가족 단체방 (Family group chat)
-- `me` - 나 (Current user)
+- `me` - 은지 (Current user)
 - `mom` - 엄마 (Online)
 - `dad` - 아빠 (Offline)
-- `sister` - 누나 (Online)
-- `brother` - 형 (Offline)
+- `sister` - 영신 (Online)
+- `brother` - 영준 (Offline)
 
 ## Technology Stack
 

@@ -43,11 +43,11 @@ export async function initializeSupabase(): Promise<InitializeResult> {
 
     // 2. Create family member profiles (multiple roles)
     const familyMembers = [
-      { display_name: "나", avatar_emoji: "😊" },
+      { display_name: "은지", avatar_emoji: "😊" },
       { display_name: "엄마", avatar_emoji: "👩" },
       { display_name: "아빠", avatar_emoji: "👨" },
-      { display_name: "누나", avatar_emoji: "👧" },
-      { display_name: "형", avatar_emoji: "👦" },
+      { display_name: "영신", avatar_emoji: "👧" },
+      { display_name: "영준", avatar_emoji: "👦" },
     ];
 
     for (const member of familyMembers) {

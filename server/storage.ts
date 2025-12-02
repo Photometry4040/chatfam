@@ -43,7 +43,7 @@ export class MemStorage implements IStorage {
     this.familyMembers = new Map();
     this.messages = new Map();
     this.groups = new Map();
-    
+
     this.initializeDefaultData();
   }
 
@@ -52,8 +52,9 @@ export class MemStorage implements IStorage {
       { id: "group", name: "가족 단체방", isOnline: true, lastMessage: "" },
       { id: "mom", name: "엄마", isOnline: true, lastMessage: "" },
       { id: "dad", name: "아빠", isOnline: false, lastMessage: "" },
-      { id: "sister", name: "누나", isOnline: true, lastMessage: "" },
-      { id: "brother", name: "형", isOnline: false, lastMessage: "" },
+      { id: "brother1", name: "영신", isOnline: true, lastMessage: "" },
+      { id: "brother2", name: "영준", isOnline: false, lastMessage: "" },
+      { id: "sister", name: "은지", isOnline: true, lastMessage: "" },
     ];
 
     defaultMembers.forEach(member => {
@@ -63,8 +64,9 @@ export class MemStorage implements IStorage {
     this.messages.set("group", []);
     this.messages.set("mom", []);
     this.messages.set("dad", []);
+    this.messages.set("brother1", []);
+    this.messages.set("brother2", []);
     this.messages.set("sister", []);
-    this.messages.set("brother", []);
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -131,33 +133,33 @@ export class MemStorage implements IStorage {
       id,
       timestamp: new Date(),
     };
-    
+
     const roomMessages = this.messages.get(insertMessage.roomId) || [];
     roomMessages.push(message);
     this.messages.set(insertMessage.roomId, roomMessages);
-    
+
     await this.updateFamilyMemberLastMessage(insertMessage.roomId, insertMessage.content);
-    
+
     return message;
   }
 
   async updateMessage(messageId: string, roomId: string, content: string): Promise<Message | undefined> {
     const roomMessages = this.messages.get(roomId) || [];
     const message = roomMessages.find((m) => m.id === messageId);
-    
+
     if (message) {
       message.content = content;
       message.isEdited = true;
       message.editedAt = new Date();
     }
-    
+
     return message;
   }
 
   async deleteMessage(messageId: string, roomId: string): Promise<void> {
     const roomMessages = this.messages.get(roomId) || [];
     const messageIndex = roomMessages.findIndex((m) => m.id === messageId);
-    
+
     if (messageIndex > -1) {
       roomMessages[messageIndex].isDeleted = true;
       roomMessages[messageIndex].content = "[삭제된 메시지]";
@@ -167,7 +169,7 @@ export class MemStorage implements IStorage {
   async addReaction(messageId: string, roomId: string, emoji: string, userId: string): Promise<void> {
     const roomMessages = this.messages.get(roomId) || [];
     const message = roomMessages.find((m) => m.id === messageId);
-    
+
     if (message) {
       if (!message.reactions) {
         message.reactions = {};
@@ -184,7 +186,7 @@ export class MemStorage implements IStorage {
   async pinMessage(messageId: string, roomId: string): Promise<void> {
     const roomMessages = this.messages.get(roomId) || [];
     const message = roomMessages.find((m) => m.id === messageId);
-    
+
     if (message) {
       message.isPinned = !message.isPinned;
     }
@@ -203,10 +205,10 @@ export class MemStorage implements IStorage {
       createdBy,
       createdAt: new Date(),
     };
-    
+
     this.groups.set(id, group);
     this.messages.set(id, []);
-    
+
     return group;
   }
 }
