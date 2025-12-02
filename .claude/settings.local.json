@@ -5,7 +5,10 @@
       "Bash(git remote add:*)",
       "Bash(claude mcp add:*)",
       "Bash(npm run check:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(pkill:*)",
+      "Bash(npm install:*)",
+      "Bash(VERCEL_TOKEN=\"SLa6v3THLUCCpNyWQLntTaSV\" vercel link --confirm)"
     ],
     "deny": [],
     "ask": []

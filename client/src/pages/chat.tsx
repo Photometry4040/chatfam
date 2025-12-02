@@ -7,32 +7,48 @@ import FamilySidebar from "@/components/chat/FamilySidebar";
 import SearchMessages from "@/components/chat/SearchMessages";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
 import { supabase } from "@/lib/supabase";
+import { initializeSupabase } from "@/lib/initializeSupabase";
 import type { Message } from "@/components/chat/ChatMessage";
 import type { FamilyMember } from "@/components/chat/FamilyMemberItem";
 
 const CURRENT_USER_ID = "me";
 const CURRENT_USER_NAME = "나";
-const FAMILY_GROUP_ID = "family-main"; // Default family group
+const FAMILY_GROUP_ID = "a0000000-0000-0000-0000-000000000001"; // Default family group UUID
 
 // Fetch family members from Supabase
 async function fetchFamilyMembers(): Promise<FamilyMember[]> {
-  const { data, error } = await supabase
-    .from("chat_family_members")
-    .select("id, name:display_name, avatar:profile_image, is_online:online_status")
-    .eq("family_group_id", FAMILY_GROUP_ID)
-    .order("created_at", { ascending: true });
+  try {
+    // Query chat_family_members with joined profiles
+    const { data, error } = await supabase
+      .from("chat_family_members")
+      .select(
+        `
+        id,
+        user_id,
+        chat_profiles(display_name, avatar_emoji, status)
+        `
+      )
+      .eq("family_group_id", FAMILY_GROUP_ID)
+      .order("joined_at", { ascending: true });
 
-  if (error) {
-    console.error("Failed to fetch family members:", error);
+    if (error) {
+      console.error("Failed to fetch family members:", error);
+      return [];
+    }
+
+    return (data || []).map((member: any) => {
+      const profile = member.chat_profiles;
+      return {
+        id: member.user_id,
+        name: profile?.display_name || "Unknown",
+        avatar: profile?.avatar_emoji,
+        isOnline: profile?.status === "online",
+      };
+    });
+  } catch (error) {
+    console.error("Error fetching family members:", error);
     return [];
   }
-
-  return (data || []).map(member => ({
-    id: member.id,
-    name: member.name || "Unknown",
-    avatar: member.avatar,
-    isOnline: member.is_online,
-  }));
 }
 
 export default function ChatPage() {
@@ -47,6 +63,13 @@ export default function ChatPage() {
     queryFn: fetchFamilyMembers,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
+
+  // Initialize Supabase data on mount
+  useEffect(() => {
+    initializeSupabase().catch((error) => {
+      console.error("Failed to initialize Supabase:", error);
+    });
+  }, []);
 
   const handleNewMessage = useCallback((serverMessage: any) => {
     const message: Message = {

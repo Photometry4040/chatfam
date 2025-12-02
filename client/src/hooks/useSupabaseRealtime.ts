@@ -76,13 +76,20 @@ export function useSupabaseRealtime({
             table: "chat_messages",
             filter: `family_group_id=eq.${familyGroupId}`,
           },
-          (payload: any) => {
+          async (payload: any) => {
             if (payload.eventType === "INSERT") {
+              // Fetch the sender's display name
+              const { data: profile } = await supabase
+                .from("chat_profiles")
+                .select("display_name")
+                .eq("user_id", payload.new.user_id)
+                .single();
+
               const newMessage: Message = {
                 id: payload.new.id,
                 content: payload.new.content,
                 senderId: payload.new.user_id,
-                senderName: payload.new.senderName || "Unknown",
+                senderName: profile?.display_name || "Unknown",
                 roomId: payload.new.family_group_id,
                 timestamp: new Date(payload.new.created_at),
                 isEdited: payload.new.is_edited,

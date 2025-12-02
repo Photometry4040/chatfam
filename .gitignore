@@ -44,3 +44,5 @@ Thumbs.db
 replit.nix
 .config/
 .upm/
+.vercel
+.env*.local
