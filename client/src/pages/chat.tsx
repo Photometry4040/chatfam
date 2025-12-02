@@ -74,6 +74,7 @@ export default function ChatPage() {
       const { data: user } = await supabase.auth.getUser();
       if (user?.user) {
         setCurrentUserId(user.user.id);
+        console.log("🔐 Current logged-in user ID:", user.user.id);
       }
     };
     getUser();
@@ -180,6 +181,9 @@ export default function ChatPage() {
             .limit(1)
             .single();
 
+          const isOwn = msg.user_id === currentUserId;
+          console.log(`🔄 Refresh - Message: "${msg.content.substring(0, 20)}..." | user_id: ${msg.user_id} | currentUserId: ${currentUserId} | isOwn: ${isOwn}`);
+
           messagesWithNames.push({
             id: msg.id,
             content: msg.content,
@@ -187,7 +191,7 @@ export default function ChatPage() {
             senderName: profile?.display_name || "Unknown",
             senderProfileId: msg.sender_profile_id || profile?.id,
             timestamp: new Date(msg.created_at),
-            isOwn: msg.user_id === currentUserId,
+            isOwn,
           });
         }
 
@@ -217,6 +221,9 @@ export default function ChatPage() {
   }, [members, selectedMemberId]);
 
   const handleNewMessage = useCallback((serverMessage: any) => {
+    const isOwn = serverMessage.senderId === currentUserId;
+    console.log(`💬 New message: "${serverMessage.content.substring(0, 20)}..." | senderId: ${serverMessage.senderId} | currentUserId: ${currentUserId} | isOwn: ${isOwn}`);
+
     const message: Message = {
       id: serverMessage.id,
       content: serverMessage.content,
@@ -225,7 +232,7 @@ export default function ChatPage() {
       senderAvatar: serverMessage.senderAvatar,
       senderProfileId: serverMessage.senderProfileId,
       timestamp: new Date(serverMessage.timestamp),
-      isOwn: serverMessage.senderId === currentUserId,
+      isOwn,
     };
 
     // Capture conversationKey before setState to ensure correct conversation is updated
@@ -244,17 +251,22 @@ export default function ChatPage() {
   }, [currentUserId, selectedConversationId]);
 
   const handleRoomHistory = useCallback((conversationId: string, serverMessages: any[]) => {
-    const formattedMessages: Message[] = serverMessages.map((m) => ({
-      id: m.id,
-      content: m.content,
-      senderId: m.senderId,
-      senderName: m.senderName,
-      senderAvatar: m.senderAvatar,
-      senderProfileId: m.senderProfileId,
-      timestamp: new Date(m.timestamp),
-      isOwn: m.senderId === currentUserId,
-    }));
+    const formattedMessages: Message[] = serverMessages.map((m) => {
+      const isOwn = m.senderId === currentUserId;
+      console.log(`📨 Message: "${m.content.substring(0, 20)}..." | senderId: ${m.senderId} | currentUserId: ${currentUserId} | isOwn: ${isOwn}`);
+      return {
+        id: m.id,
+        content: m.content,
+        senderId: m.senderId,
+        senderName: m.senderName,
+        senderAvatar: m.senderAvatar,
+        senderProfileId: m.senderProfileId,
+        timestamp: new Date(m.timestamp),
+        isOwn,
+      };
+    });
 
+    console.log(`✅ Loaded ${formattedMessages.length} messages for conversation ${conversationId}`);
     setMessages((prev) => ({
       ...prev,
       [conversationId]: formattedMessages,
