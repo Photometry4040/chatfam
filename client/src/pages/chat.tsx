@@ -133,6 +133,7 @@ export default function ChatPage() {
     familyGroupId: FAMILY_GROUP_ID,
     userId: currentUserId,
     userName: currentUserName,
+    senderProfileId: selectedMemberId,
     onMessage: handleNewMessage,
     onRoomHistory: handleRoomHistory,
     onTyping: (userId, userName) => {

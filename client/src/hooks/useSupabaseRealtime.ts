@@ -6,6 +6,7 @@ interface UseSupabaseRealtimeOptions {
   familyGroupId: string;
   userId: string;
   userName: string;
+  senderProfileId: string;
   onMessage: (message: Message) => void;
   onRoomHistory: (roomId: string, messages: Message[]) => void;
   onTyping?: (userId: string, userName: string) => void;
@@ -15,6 +16,7 @@ export function useSupabaseRealtime({
   familyGroupId,
   userId,
   userName,
+  senderProfileId,
   onMessage,
   onRoomHistory,
   onTyping,
@@ -31,6 +33,7 @@ export function useSupabaseRealtime({
 
   // Setup Realtime subscriptions
   const setupSubscriptions = useCallback(async () => {
+    if (!senderProfileId) return;
     try {
       // Load initial message history
       const { data: messages } = await supabase
@@ -161,7 +164,7 @@ export function useSupabaseRealtime({
       console.error("Error setting up subscriptions:", error);
       setIsConnected(false);
     }
-  }, [familyGroupId, userId]);
+  }, [familyGroupId, userId, senderProfileId]);
 
   // Initialize subscriptions
   useEffect(() => {
@@ -185,6 +188,7 @@ export function useSupabaseRealtime({
           .insert({
             family_group_id: familyGroupId,
             user_id: userId,
+            sender_profile_id: senderProfileId,
             content,
             message_type: "text",
           })
@@ -212,6 +216,7 @@ export function useSupabaseRealtime({
             content: data.content,
             senderId: data.user_id,
             senderName: userName,
+            senderProfileId: senderProfileId,
             roomId: data.family_group_id,
             timestamp: new Date(data.created_at),
             isEdited: data.is_edited,
@@ -230,7 +235,7 @@ export function useSupabaseRealtime({
         console.error("Error in sendMessage:", error);
       }
     },
-    [familyGroupId, userId, userName]
+    [familyGroupId, userId, userName, senderProfileId]
   );
 
   const sendTyping = useCallback(async () => {
