@@ -186,7 +186,6 @@ export function useSupabaseRealtime({
   const sendMessage = useCallback(
     async (content: string) => {
       try {
-        console.log("[sendMessage] Starting - conversationId:", conversationId, "senderProfileId:", senderProfileId);
         const { data, error } = await supabase
           .from("chat_messages")
           .insert({
@@ -212,11 +211,9 @@ export function useSupabaseRealtime({
           .single();
 
         if (error) {
-          console.error("[sendMessage] Insert error:", error);
+          console.error("Error sending message:", error);
           return;
         }
-
-        console.log("[sendMessage] Insert successful, data:", data);
 
         if (data) {
           const message: Message = {
@@ -230,11 +227,7 @@ export function useSupabaseRealtime({
             isEdited: data.is_edited,
             isDeleted: false,
           };
-          console.log("[sendMessage] Calling onMessage with message:", message);
           callbacksRef.current.onMessage(message);
-          console.log("[sendMessage] onMessage callback executed");
-        } else {
-          console.warn("[sendMessage] No data returned from insert");
         }
 
         // Clear typing indicator

@@ -155,9 +155,6 @@ export default function ChatPage() {
   }, [members, selectedMemberId]);
 
   const handleNewMessage = useCallback((serverMessage: any) => {
-    console.log("[handleNewMessage] Called with serverMessage:", serverMessage);
-    console.log("[handleNewMessage] selectedConversationId:", selectedConversationId, "selectedMemberId:", selectedMemberId);
-
     const message: Message = {
       id: serverMessage.id,
       content: serverMessage.content,
@@ -169,38 +166,22 @@ export default function ChatPage() {
       isOwn: serverMessage.senderProfileId === selectedMemberId,
     };
 
-    console.log("[handleNewMessage] message object:", message);
-
-    // Capture conversationKey before setState
+    // Capture conversationKey before setState to ensure correct conversation is updated
     const conversationKey = selectedConversationId;
-    console.log("[handleNewMessage] Captured conversationKey:", conversationKey);
 
     setMessages((prev) => {
-      console.log("[setMessages] Current prev state keys:", Object.keys(prev));
       const conversationMessages = prev[conversationKey] || [];
-      console.log("[setMessages] conversationMessages count:", conversationMessages.length);
       const exists = conversationMessages.some((m) => m.id === message.id);
-      console.log("[setMessages] message already exists:", exists);
-      if (exists) {
-        console.log("[setMessages] Returning prev (duplicate)");
-        return prev;
-      }
+      if (exists) return prev;
 
-      console.log("[setMessages] Creating new state with message added");
-      const newState = {
+      return {
         ...prev,
         [conversationKey]: [...conversationMessages, message],
       };
-      console.log("[setMessages] New state keys:", Object.keys(newState));
-      console.log("[setMessages] New message count for", conversationKey, ":", newState[conversationKey].length);
-      return newState;
     });
   }, [selectedMemberId, selectedConversationId]);
 
   const handleRoomHistory = useCallback((conversationId: string, serverMessages: any[]) => {
-    console.log("[handleRoomHistory] Called with conversationId:", conversationId, "messageCount:", serverMessages.length);
-    console.log("[handleRoomHistory] serverMessages:", serverMessages);
-
     const formattedMessages: Message[] = serverMessages.map((m) => ({
       id: m.id,
       content: m.content,
@@ -212,15 +193,10 @@ export default function ChatPage() {
       isOwn: m.senderProfileId === selectedMemberId,
     }));
 
-    console.log("[handleRoomHistory] formattedMessages count:", formattedMessages.length);
-
-    setMessages((prev) => {
-      console.log("[handleRoomHistory setMessages] Setting messages for conversation:", conversationId);
-      return {
-        ...prev,
-        [conversationId]: formattedMessages,
-      };
-    });
+    setMessages((prev) => ({
+      ...prev,
+      [conversationId]: formattedMessages,
+    }));
   }, [selectedMemberId]);
 
   const { isConnected, sendMessage, sendTyping } = useSupabaseRealtime({
@@ -251,22 +227,11 @@ export default function ChatPage() {
   const currentMessages = messages[selectedConversationId] || [];
   const currentMember = members.find((m) => m.id === selectedMemberId);
 
-  // Debug: Log when currentMessages changes
-  useEffect(() => {
-    console.log("[currentMessages updated] selectedConversationId:", selectedConversationId, "message count:", currentMessages.length);
-    console.log("[currentMessages] full messages state:", Object.keys(messages).map(key => ({ [key]: messages[key]?.length })));
-  }, [currentMessages, selectedConversationId, messages]);
-
   const filteredMessages = searchQuery.trim()
     ? currentMessages.filter((msg) =>
         msg.content.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : currentMessages;
-
-  // Debug: Log filteredMessages
-  useEffect(() => {
-    console.log("[filteredMessages updated] count:", filteredMessages.length);
-  }, [filteredMessages]);
 
   const handleSendMessage = useCallback(
     (content: string) => {
