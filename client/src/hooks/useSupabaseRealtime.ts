@@ -35,7 +35,7 @@ export function useSupabaseRealtime({
 
   // Setup Realtime subscriptions
   const setupSubscriptions = useCallback(async () => {
-    if (!senderProfileId) return;
+    if (!senderProfileId || !conversationId) return;
     try {
       // Load initial message history
       const { data: messages } = await supabase
