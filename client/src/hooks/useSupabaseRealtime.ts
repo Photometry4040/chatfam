@@ -46,6 +46,7 @@ export function useSupabaseRealtime({
           content,
           user_id,
           family_group_id,
+          sender_profile_id,
           is_edited,
           edited_at,
           created_at
@@ -73,7 +74,7 @@ export function useSupabaseRealtime({
           content: msg.content,
           senderId: msg.user_id,
           senderName: profile?.display_name || "Unknown",
-          senderProfileId: profile?.id,
+          senderProfileId: msg.sender_profile_id || profile?.id,
           roomId: msg.family_group_id,
           timestamp: new Date(msg.created_at),
           isEdited: msg.is_edited,
@@ -104,10 +105,7 @@ export function useSupabaseRealtime({
               const { data: profile } = await supabase
                 .from("chat_profiles")
                 .select("id, display_name")
-                .eq("user_id", payload.new.user_id)
-                .eq("family_group_id", payload.new.family_group_id)
-                .order("created_at", { ascending: true })
-                .limit(1)
+                .eq("id", payload.new.sender_profile_id)
                 .single();
 
               const newMessage: Message = {
@@ -115,7 +113,7 @@ export function useSupabaseRealtime({
                 content: payload.new.content,
                 senderId: payload.new.user_id,
                 senderName: profile?.display_name || "Unknown",
-                senderProfileId: profile?.id,
+                senderProfileId: payload.new.sender_profile_id,
                 roomId: payload.new.family_group_id,
                 timestamp: new Date(payload.new.created_at),
                 isEdited: payload.new.is_edited,
@@ -204,6 +202,7 @@ export function useSupabaseRealtime({
             content,
             user_id,
             family_group_id,
+            sender_profile_id,
             is_edited,
             edited_at,
             created_at
@@ -222,7 +221,7 @@ export function useSupabaseRealtime({
             content: data.content,
             senderId: data.user_id,
             senderName: userName,
-            senderProfileId: senderProfileId,
+            senderProfileId: data.sender_profile_id || senderProfileId,
             roomId: data.family_group_id,
             timestamp: new Date(data.created_at),
             isEdited: data.is_edited,
