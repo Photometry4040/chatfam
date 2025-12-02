@@ -54,21 +54,31 @@ export async function initializeSupabase(): Promise<InitializeResult> {
     for (const member of familyMembers) {
       const { data: existingProfile } = await supabase
         .from("chat_profiles")
-        .select("id")
+        .select("id, user_id")
         .eq("family_group_id", FAMILY_GROUP_ID)
         .eq("display_name", member.display_name)
         .single();
 
       if (!existingProfile) {
+        // Create new profile with unique user_id
         await supabase.from("chat_profiles").insert({
           family_group_id: FAMILY_GROUP_ID,
-          user_id: member.userId,  // Use unique mock user_id for each family member
+          user_id: member.userId,
           display_name: member.display_name,
           avatar_emoji: member.avatar_emoji,
           status: "online",
           timezone: "Asia/Seoul",
           language: "ko",
         });
+      } else {
+        // Update existing profile with unique user_id if it doesn't match
+        if (existingProfile.user_id !== member.userId) {
+          await supabase
+            .from("chat_profiles")
+            .update({ user_id: member.userId })
+            .eq("id", existingProfile.id);
+          console.log(`✅ Updated profile ${member.display_name} with unique user_id: ${member.userId}`);
+        }
       }
     }
 
