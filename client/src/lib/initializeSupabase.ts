@@ -70,16 +70,8 @@ export async function initializeSupabase(): Promise<InitializeResult> {
           timezone: "Asia/Seoul",
           language: "ko",
         });
-      } else {
-        // Update existing profile with unique user_id if it doesn't match
-        if (existingProfile.user_id !== member.userId) {
-          await supabase
-            .from("chat_profiles")
-            .update({ user_id: member.userId })
-            .eq("id", existingProfile.id);
-          // console.log(`✅ Updated profile ${member.display_name} with unique user_id: ${member.userId}`);
-        }
       }
+      // Profile already exists, no update needed
     }
 
     // 3. Check if family member exists
