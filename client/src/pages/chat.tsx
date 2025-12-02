@@ -176,10 +176,7 @@ export default function ChatPage() {
           const { data: profile } = await supabase
             .from("chat_profiles")
             .select("id, display_name, avatar_emoji")
-            .eq("user_id", msg.user_id)
-            .eq("family_group_id", msg.family_group_id)
-            .order("created_at", { ascending: true })
-            .limit(1)
+            .eq("id", msg.sender_profile_id)
             .single();
 
           const isOwn = msg.sender_profile_id === selectedMemberId;
@@ -190,7 +187,7 @@ export default function ChatPage() {
             content: msg.content,
             senderId: msg.user_id,
             senderName: profile?.display_name || "Unknown",
-            senderProfileId: msg.sender_profile_id || profile?.id,
+            senderProfileId: msg.sender_profile_id,
             timestamp: new Date(msg.created_at),
             isOwn,
           });
