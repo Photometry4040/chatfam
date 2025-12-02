@@ -52,7 +52,7 @@ export default function MessageList({ messages, typingUsers = [], typingNames = 
           <div className="space-y-3">
             {group.messages.map((message, messageIndex) => {
               const prevMessage = messageIndex > 0 ? group.messages[messageIndex - 1] : null;
-              const showSender = !prevMessage || prevMessage.senderId !== message.senderId;
+              const showSender = !prevMessage || prevMessage.senderProfileId !== message.senderProfileId;
 
               return (
                 <ChatMessage
