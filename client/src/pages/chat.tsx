@@ -245,11 +245,22 @@ export default function ChatPage() {
   const currentMessages = messages[selectedConversationId] || [];
   const currentMember = members.find((m) => m.id === selectedMemberId);
 
+  // Debug: Log when currentMessages changes
+  useEffect(() => {
+    console.log("[currentMessages updated] selectedConversationId:", selectedConversationId, "message count:", currentMessages.length);
+    console.log("[currentMessages] full messages state:", Object.keys(messages).map(key => ({ [key]: messages[key]?.length })));
+  }, [currentMessages, selectedConversationId, messages]);
+
   const filteredMessages = searchQuery.trim()
     ? currentMessages.filter((msg) =>
         msg.content.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : currentMessages;
+
+  // Debug: Log filteredMessages
+  useEffect(() => {
+    console.log("[filteredMessages updated] count:", filteredMessages.length);
+  }, [filteredMessages]);
 
   const handleSendMessage = useCallback(
     (content: string) => {
