@@ -1,7 +1,6 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist/public",
-  "serverlessFunctionRegion": "icn1",
   "functions": {
     "dist/index.cjs": {
       "memory": 1024,
@@ -12,11 +11,11 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/index.cjs"
+      "dest": "/dist/index.cjs"
     },
     {
       "src": "/ws",
-      "dest": "/index.cjs"
+      "dest": "/dist/index.cjs"
     },
     {
       "src": "/(.*)",
