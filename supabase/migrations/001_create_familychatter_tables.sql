@@ -15,10 +15,11 @@ CREATE TABLE IF NOT EXISTS public.chat_family_groups (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create chat_profiles table
+-- Create chat_profiles table (gamily member profiles, not tied to auth.users uniquely)
 CREATE TABLE IF NOT EXISTS public.chat_profiles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
+  family_group_id UUID REFERENCES public.chat_family_groups(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   display_name TEXT NOT NULL CHECK (char_length(display_name) >= 1 AND char_length(display_name) <= 100),
   avatar_emoji TEXT,
   status TEXT DEFAULT 'online' CHECK (status IN ('online', 'away', 'offline')),

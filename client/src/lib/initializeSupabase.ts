@@ -41,23 +41,34 @@ export async function initializeSupabase(): Promise<InitializeResult> {
       });
     }
 
-    // 2. Check if user profile exists
-    const { data: existingProfile } = await supabase
-      .from("chat_profiles")
-      .select("id")
-      .eq("user_id", userId)
-      .single();
+    // 2. Create family member profiles (multiple roles)
+    const familyMembers = [
+      { display_name: "나", avatar_emoji: "😊" },
+      { display_name: "엄마", avatar_emoji: "👩" },
+      { display_name: "아빠", avatar_emoji: "👨" },
+      { display_name: "누나", avatar_emoji: "👧" },
+      { display_name: "형", avatar_emoji: "👦" },
+    ];
 
-    if (!existingProfile) {
-      // Create user profile
-      await supabase.from("chat_profiles").insert({
-        user_id: userId,
-        display_name: "나",
-        avatar_emoji: "😊",
-        status: "online",
-        timezone: "Asia/Seoul",
-        language: "ko",
-      });
+    for (const member of familyMembers) {
+      const { data: existingProfile } = await supabase
+        .from("chat_profiles")
+        .select("id")
+        .eq("family_group_id", FAMILY_GROUP_ID)
+        .eq("display_name", member.display_name)
+        .single();
+
+      if (!existingProfile) {
+        await supabase.from("chat_profiles").insert({
+          family_group_id: FAMILY_GROUP_ID,
+          user_id: userId,
+          display_name: member.display_name,
+          avatar_emoji: member.avatar_emoji,
+          status: "online",
+          timezone: "Asia/Seoul",
+          language: "ko",
+        });
+      }
     }
 
     // 3. Check if family member exists

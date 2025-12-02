@@ -13,36 +13,33 @@ import type { FamilyMember } from "@/components/chat/FamilyMemberItem";
 
 const FAMILY_GROUP_ID = "a0000000-0000-0000-0000-000000000001"; // Default family group UUID
 
-// Fetch family members from Supabase
+// Fetch family member roles from chat_profiles
 async function fetchFamilyMembers(familyGroupId: string): Promise<FamilyMember[]> {
   try {
-    // Query chat_family_members with joined profiles
     const { data, error } = await supabase
-      .from("chat_family_members")
+      .from("chat_profiles")
       .select(
         `
         id,
-        user_id,
-        chat_profiles(display_name, avatar_emoji, status)
+        display_name,
+        avatar_emoji,
+        status
         `
       )
       .eq("family_group_id", familyGroupId)
-      .order("joined_at", { ascending: true });
+      .order("created_at", { ascending: true });
 
     if (error) {
       console.error("Failed to fetch family members:", error);
       return [];
     }
 
-    return (data || []).map((member: any) => {
-      const profile = member.chat_profiles;
-      return {
-        id: member.user_id,
-        name: profile?.display_name || "Unknown",
-        avatar: profile?.avatar_emoji,
-        isOnline: profile?.status === "online",
-      };
-    });
+    return (data || []).map((profile: any) => ({
+      id: profile.id,
+      name: profile.display_name || "Unknown",
+      avatar: profile.avatar_emoji,
+      isOnline: profile.status === "online",
+    }));
   } catch (error) {
     console.error("Error fetching family members:", error);
     return [];
@@ -51,28 +48,19 @@ async function fetchFamilyMembers(familyGroupId: string): Promise<FamilyMember[]
 
 export default function ChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [selectedMemberId, setSelectedMemberId] = useState("group");
+  const [selectedMemberId, setSelectedMemberId] = useState<string>("");
   const [messages, setMessages] = useState<Record<string, Message[]>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [currentUserName, setCurrentUserName] = useState<string>("");
 
-  // Get current user info
+  // Get current user info and initialize selected member
   useEffect(() => {
     const getUser = async () => {
       const { data: user } = await supabase.auth.getUser();
       if (user?.user) {
         setCurrentUserId(user.user.id);
-        // Get user's display name from profile
-        const { data: profile } = await supabase
-          .from("chat_profiles")
-          .select("display_name")
-          .eq("user_id", user.user.id)
-          .single();
-        if (profile?.display_name) {
-          setCurrentUserName(profile.display_name);
-        }
       }
     };
     getUser();
@@ -90,6 +78,14 @@ export default function ChatPage() {
       console.error("Failed to initialize Supabase:", error);
     });
   }, []);
+
+  // Set default selected member when members load
+  useEffect(() => {
+    if (members.length > 0 && !selectedMemberId) {
+      setSelectedMemberId(members[0].id);
+      setCurrentUserName(members[0].name);
+    }
+  }, [members, selectedMemberId]);
 
   const handleNewMessage = useCallback((serverMessage: any) => {
     const message: Message = {
@@ -173,7 +169,12 @@ export default function ChatPage() {
     setSelectedMemberId(memberId);
     setSearchQuery("");
     setTypingUsers(new Set());
-  }, []);
+    // Update current user name when member is selected
+    const member = members.find((m) => m.id === memberId);
+    if (member) {
+      setCurrentUserName(member.name);
+    }
+  }, [members]);
 
   const chatTitle = currentMember?.name || "채팅";
   const memberCount = selectedMemberId === "group" ? members.length - 1 : undefined;

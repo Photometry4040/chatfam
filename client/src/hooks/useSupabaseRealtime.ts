@@ -50,13 +50,16 @@ export function useSupabaseRealtime({
         .order("created_at", { ascending: true })
         .limit(100);
 
-      // Fetch messages and then get sender names
+      // Fetch messages and then get sender names from family group profiles
       const messagesWithNames: Message[] = [];
       for (const msg of messages || []) {
         const { data: profile } = await supabase
           .from("chat_profiles")
-          .select("display_name")
+          .select("display_name, avatar_emoji")
           .eq("user_id", msg.user_id)
+          .eq("family_group_id", msg.family_group_id)
+          .order("created_at", { ascending: true })
+          .limit(1)
           .single();
 
         messagesWithNames.push({
@@ -88,11 +91,14 @@ export function useSupabaseRealtime({
           },
           async (payload: any) => {
             if (payload.eventType === "INSERT") {
-              // Fetch the sender's display name
+              // Fetch the sender's display name from family group profiles
               const { data: profile } = await supabase
                 .from("chat_profiles")
                 .select("display_name")
                 .eq("user_id", payload.new.user_id)
+                .eq("family_group_id", payload.new.family_group_id)
+                .order("created_at", { ascending: true })
+                .limit(1)
                 .single();
 
               const newMessage: Message = {
