@@ -8,7 +8,11 @@
       "Bash(npm run build:*)",
       "Bash(pkill:*)",
       "Bash(npm install:*)",
-      "Bash(VERCEL_TOKEN=\"SLa6v3THLUCCpNyWQLntTaSV\" vercel link --confirm)"
+      "Bash(VERCEL_TOKEN=\"SLa6v3THLUCCpNyWQLntTaSV\" vercel link --confirm)",
+      "mcp__supabase__apply_migration",
+      "mcp__supabase__execute_sql",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

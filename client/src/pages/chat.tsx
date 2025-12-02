@@ -187,7 +187,7 @@ export default function ChatPage() {
             senderName: profile?.display_name || "Unknown",
             senderProfileId: msg.sender_profile_id || profile?.id,
             timestamp: new Date(msg.created_at),
-            isOwn: msg.sender_profile_id === selectedMemberId,
+            isOwn: msg.user_id === currentUserId,
           });
         }
 
@@ -201,7 +201,7 @@ export default function ChatPage() {
     } finally {
       setIsRefreshing(false);
     }
-  }, [selectedConversationId]);
+  }, [selectedConversationId, currentUserId]);
 
   // Fetch conversations on mount
   useEffect(() => {
@@ -225,7 +225,7 @@ export default function ChatPage() {
       senderAvatar: serverMessage.senderAvatar,
       senderProfileId: serverMessage.senderProfileId,
       timestamp: new Date(serverMessage.timestamp),
-      isOwn: serverMessage.senderProfileId === selectedMemberId,
+      isOwn: serverMessage.senderId === currentUserId,
     };
 
     // Capture conversationKey before setState to ensure correct conversation is updated
@@ -241,7 +241,7 @@ export default function ChatPage() {
         [conversationKey]: [...conversationMessages, message],
       };
     });
-  }, [selectedMemberId, selectedConversationId]);
+  }, [currentUserId, selectedConversationId]);
 
   const handleRoomHistory = useCallback((conversationId: string, serverMessages: any[]) => {
     const formattedMessages: Message[] = serverMessages.map((m) => ({
@@ -252,14 +252,14 @@ export default function ChatPage() {
       senderAvatar: m.senderAvatar,
       senderProfileId: m.senderProfileId,
       timestamp: new Date(m.timestamp),
-      isOwn: m.senderProfileId === selectedMemberId,
+      isOwn: m.senderId === currentUserId,
     }));
 
     setMessages((prev) => ({
       ...prev,
       [conversationId]: formattedMessages,
     }));
-  }, [selectedMemberId]);
+  }, [currentUserId]);
 
   const { isConnected, sendMessage, sendTyping } = useSupabaseRealtime({
     familyGroupId: FAMILY_GROUP_ID,
