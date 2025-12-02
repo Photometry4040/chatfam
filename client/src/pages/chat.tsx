@@ -149,7 +149,8 @@ export default function ChatPage() {
     },
   });
 
-  const currentMessages = messages[selectedMemberId] || [];
+  // Show all family group messages (not filtered by member)
+  const currentMessages = messages[FAMILY_GROUP_ID] || [];
   const currentMember = members.find((m) => m.id === selectedMemberId);
 
   const filteredMessages = searchQuery.trim()
