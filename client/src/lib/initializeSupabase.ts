@@ -42,12 +42,13 @@ export async function initializeSupabase(): Promise<InitializeResult> {
     }
 
     // 2. Create family member profiles (multiple roles)
+    // Each family member gets a unique mock user_id to distinguish messages
     const familyMembers = [
-      { display_name: "은지", avatar_emoji: "😊" },
-      { display_name: "엄마", avatar_emoji: "👩" },
-      { display_name: "아빠", avatar_emoji: "👨" },
-      { display_name: "영신", avatar_emoji: "👧" },
-      { display_name: "영준", avatar_emoji: "👦" },
+      { display_name: "은지", avatar_emoji: "😊", userId: "00000000-0000-0000-0000-000000000001" },
+      { display_name: "엄마", avatar_emoji: "👩", userId: "00000000-0000-0000-0000-000000000002" },
+      { display_name: "아빠", avatar_emoji: "👨", userId: "00000000-0000-0000-0000-000000000003" },
+      { display_name: "영신", avatar_emoji: "👧", userId: "00000000-0000-0000-0000-000000000004" },
+      { display_name: "영준", avatar_emoji: "👦", userId: "00000000-0000-0000-0000-000000000005" },
     ];
 
     for (const member of familyMembers) {
@@ -61,7 +62,7 @@ export async function initializeSupabase(): Promise<InitializeResult> {
       if (!existingProfile) {
         await supabase.from("chat_profiles").insert({
           family_group_id: FAMILY_GROUP_ID,
-          user_id: userId,
+          user_id: member.userId,  // Use unique mock user_id for each family member
           display_name: member.display_name,
           avatar_emoji: member.avatar_emoji,
           status: "online",
