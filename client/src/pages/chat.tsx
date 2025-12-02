@@ -63,6 +63,7 @@ export default function ChatPage() {
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [currentUserName, setCurrentUserName] = useState<string>("");
+  const [currentUserProfileId, setCurrentUserProfileId] = useState<string>("");
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversationId, setSelectedConversationId] = useState<string>("")
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
@@ -181,8 +182,8 @@ export default function ChatPage() {
             .limit(1)
             .single();
 
-          const isOwn = msg.user_id === currentUserId;
-          console.log(`🔄 Refresh - Message: "${msg.content.substring(0, 20)}..." | user_id: ${msg.user_id} | currentUserId: ${currentUserId} | isOwn: ${isOwn}`);
+          const isOwn = msg.sender_profile_id === selectedMemberId;
+          console.log(`🔄 Refresh - Message: "${msg.content.substring(0, 20)}..." | sender_profile_id: ${msg.sender_profile_id} | selectedMemberId: ${selectedMemberId} | isOwn: ${isOwn}`);
 
           messagesWithNames.push({
             id: msg.id,
@@ -205,7 +206,7 @@ export default function ChatPage() {
     } finally {
       setIsRefreshing(false);
     }
-  }, [selectedConversationId, currentUserId]);
+  }, [selectedConversationId, selectedMemberId]);
 
   // Fetch conversations on mount
   useEffect(() => {
@@ -221,8 +222,8 @@ export default function ChatPage() {
   }, [members, selectedMemberId]);
 
   const handleNewMessage = useCallback((serverMessage: any) => {
-    const isOwn = serverMessage.senderId === currentUserId;
-    console.log(`💬 New message: "${serverMessage.content.substring(0, 20)}..." | senderId: ${serverMessage.senderId} | currentUserId: ${currentUserId} | isOwn: ${isOwn}`);
+    const isOwn = serverMessage.senderProfileId === selectedMemberId;
+    console.log(`💬 New message: "${serverMessage.content.substring(0, 20)}..." | senderProfileId: ${serverMessage.senderProfileId} | selectedMemberId: ${selectedMemberId} | isOwn: ${isOwn}`);
 
     const message: Message = {
       id: serverMessage.id,
@@ -248,12 +249,12 @@ export default function ChatPage() {
         [conversationKey]: [...conversationMessages, message],
       };
     });
-  }, [currentUserId, selectedConversationId]);
+  }, [selectedMemberId, selectedConversationId]);
 
   const handleRoomHistory = useCallback((conversationId: string, serverMessages: any[]) => {
     const formattedMessages: Message[] = serverMessages.map((m) => {
-      const isOwn = m.senderId === currentUserId;
-      console.log(`📨 Message: "${m.content.substring(0, 20)}..." | senderId: ${m.senderId} | currentUserId: ${currentUserId} | isOwn: ${isOwn}`);
+      const isOwn = m.senderProfileId === selectedMemberId;
+      console.log(`📨 Message: "${m.content.substring(0, 20)}..." | senderProfileId: ${m.senderProfileId} | selectedMemberId: ${selectedMemberId} | isOwn: ${isOwn}`);
       return {
         id: m.id,
         content: m.content,
@@ -271,7 +272,7 @@ export default function ChatPage() {
       ...prev,
       [conversationId]: formattedMessages,
     }));
-  }, [currentUserId]);
+  }, [selectedMemberId]);
 
   const { isConnected, sendMessage, sendTyping } = useSupabaseRealtime({
     familyGroupId: FAMILY_GROUP_ID,
