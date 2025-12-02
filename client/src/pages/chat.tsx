@@ -192,6 +192,9 @@ export default function ChatPage() {
   }, [selectedMemberId, selectedConversationId]);
 
   const handleRoomHistory = useCallback((conversationId: string, serverMessages: any[]) => {
+    console.log("[handleRoomHistory] Called with conversationId:", conversationId, "messageCount:", serverMessages.length);
+    console.log("[handleRoomHistory] serverMessages:", serverMessages);
+
     const formattedMessages: Message[] = serverMessages.map((m) => ({
       id: m.id,
       content: m.content,
@@ -203,10 +206,15 @@ export default function ChatPage() {
       isOwn: m.senderProfileId === selectedMemberId,
     }));
 
-    setMessages((prev) => ({
-      ...prev,
-      [conversationId]: formattedMessages,
-    }));
+    console.log("[handleRoomHistory] formattedMessages count:", formattedMessages.length);
+
+    setMessages((prev) => {
+      console.log("[handleRoomHistory setMessages] Setting messages for conversation:", conversationId);
+      return {
+        ...prev,
+        [conversationId]: formattedMessages,
+      };
+    });
   }, [selectedMemberId]);
 
   const { isConnected, sendMessage, sendTyping } = useSupabaseRealtime({
