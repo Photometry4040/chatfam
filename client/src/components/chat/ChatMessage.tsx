@@ -55,7 +55,7 @@ export default function ChatMessage({ message, showSender = true }: ChatMessageP
       )}
       data-testid={`message-${message.id}`}
     >
-      {!message.isOwn && showSender && (
+      {showSender && (
         <Avatar className="w-8 h-8 flex-shrink-0">
           <AvatarImage src={message.senderAvatar} alt={message.senderName} />
           <AvatarFallback className="text-xs bg-muted">
@@ -64,16 +64,17 @@ export default function ChatMessage({ message, showSender = true }: ChatMessageP
         </Avatar>
       )}
       
-      {!message.isOwn && !showSender && <div className="w-8 flex-shrink-0" />}
-      
       <div
         className={cn(
           "flex flex-col max-w-[70%]",
           message.isOwn ? "items-end" : "items-start"
         )}
       >
-        {!message.isOwn && showSender && (
-          <span className="text-sm font-medium text-muted-foreground mb-1 ml-1">
+        {showSender && (
+          <span className={cn(
+            "text-sm font-medium mb-1",
+            message.isOwn ? "text-right mr-1" : "text-muted-foreground ml-1"
+          )}>
             {message.senderName}
           </span>
         )}
