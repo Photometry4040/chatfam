@@ -47,9 +47,6 @@ export default function ChatMessage({ message, showSender = true }: ChatMessageP
     .toUpperCase()
     .slice(0, 2);
 
-  // Debug: Log sender profile and isOwn
-  console.log(`Message: "${message.content.substring(0, 15)}..." | Sender: ${message.senderName} | senderProfileId: ${message.senderProfileId} | isOwn: ${message.isOwn}`);
-
   return (
     <div
       className={cn(
