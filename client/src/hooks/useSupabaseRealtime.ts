@@ -132,7 +132,7 @@ export function useSupabaseRealtime({
           }
         )
         .subscribe((status) => {
-          console.log(`Messages subscription status: ${status}`);
+          // console.log(`Messages subscription status: ${status}`);
           if (status === "SUBSCRIBED") {
             setIsConnected(true);
           }
@@ -167,7 +167,7 @@ export function useSupabaseRealtime({
           }
         )
         .subscribe((status) => {
-          console.log(`Typing subscription status: ${status}`);
+          // console.log(`Typing subscription status: ${status}`);
         });
 
       subscriptionsRef.current = [messagesSubscription, typingSubscription];

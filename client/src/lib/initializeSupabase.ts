@@ -77,7 +77,7 @@ export async function initializeSupabase(): Promise<InitializeResult> {
             .from("chat_profiles")
             .update({ user_id: member.userId })
             .eq("id", existingProfile.id);
-          console.log(`✅ Updated profile ${member.display_name} with unique user_id: ${member.userId}`);
+          // console.log(`✅ Updated profile ${member.display_name} with unique user_id: ${member.userId}`);
         }
       }
     }
