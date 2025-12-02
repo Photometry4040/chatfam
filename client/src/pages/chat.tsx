@@ -155,6 +155,9 @@ export default function ChatPage() {
   }, [members, selectedMemberId]);
 
   const handleNewMessage = useCallback((serverMessage: any) => {
+    console.log("[handleNewMessage] Called with serverMessage:", serverMessage);
+    console.log("[handleNewMessage] selectedConversationId:", selectedConversationId, "selectedMemberId:", selectedMemberId);
+
     const message: Message = {
       id: serverMessage.id,
       content: serverMessage.content,
@@ -166,12 +169,21 @@ export default function ChatPage() {
       isOwn: serverMessage.senderProfileId === selectedMemberId,
     };
 
+    console.log("[handleNewMessage] message object:", message);
+
     setMessages((prev) => {
       const conversationKey = selectedConversationId;
+      console.log("[setMessages] conversationKey:", conversationKey, "prev state:", Object.keys(prev));
       const conversationMessages = prev[conversationKey] || [];
+      console.log("[setMessages] conversationMessages count:", conversationMessages.length);
       const exists = conversationMessages.some((m) => m.id === message.id);
-      if (exists) return prev;
+      console.log("[setMessages] message already exists:", exists);
+      if (exists) {
+        console.log("[setMessages] Returning prev (duplicate)");
+        return prev;
+      }
 
+      console.log("[setMessages] Adding new message to conversation");
       return {
         ...prev,
         [conversationKey]: [...conversationMessages, message],
