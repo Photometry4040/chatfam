@@ -1,18 +1,22 @@
 import { Button } from "@/components/ui/button";
-import { Menu, Users } from "lucide-react";
+import { Menu, Users, RotateCcw } from "lucide-react";
 
 interface ChatHeaderProps {
   title: string;
   memberCount?: number;
   onMenuClick?: () => void;
   showMenuButton?: boolean;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
 }
 
-export default function ChatHeader({ 
-  title, 
+export default function ChatHeader({
+  title,
   memberCount,
   onMenuClick,
-  showMenuButton = true
+  showMenuButton = true,
+  onRefresh,
+  isRefreshing = false
 }: ChatHeaderProps) {
   return (
     <header className="h-14 flex items-center justify-between gap-2 px-4 border-b border-border bg-background sticky top-0 z-50">
@@ -38,8 +42,21 @@ export default function ChatHeader({
           </span>
         )}
       </div>
-      
-      {showMenuButton && <div className="w-9 lg:hidden" />}
+
+      <div className="flex items-center gap-1">
+        {onRefresh && (
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            title="메시지 새로고침"
+          >
+            <RotateCcw className={`w-5 h-5 ${isRefreshing ? "animate-spin" : ""}`} />
+          </Button>
+        )}
+        {showMenuButton && <div className="w-9 lg:hidden" />}
+      </div>
     </header>
   );
 }

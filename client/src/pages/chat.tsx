@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { RotateCcw } from "lucide-react";
 import ChatHeader from "@/components/chat/ChatHeader";
 import ChatInput from "@/components/chat/ChatInput";
 import MessageList from "@/components/chat/MessageList";
@@ -65,6 +66,7 @@ export default function ChatPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversationId, setSelectedConversationId] = useState<string>("")
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Get current user info and initialize selected member
   useEffect(() => {
@@ -140,6 +142,66 @@ export default function ChatPage() {
       console.error("Error in createConversation:", error);
     }
   }, [currentUserId]);
+
+  // Refresh current conversation messages
+  const handleRefreshMessages = useCallback(async () => {
+    if (!selectedConversationId) return;
+
+    try {
+      setIsRefreshing(true);
+      const { data: messages } = await supabase
+        .from("chat_messages")
+        .select(
+          `
+          id,
+          content,
+          user_id,
+          family_group_id,
+          sender_profile_id,
+          is_edited,
+          edited_at,
+          created_at
+        `
+        )
+        .eq("family_group_id", FAMILY_GROUP_ID)
+        .eq("conversation_id", selectedConversationId)
+        .order("created_at", { ascending: true })
+        .limit(100);
+
+      if (messages) {
+        const messagesWithNames: Message[] = [];
+        for (const msg of messages) {
+          const { data: profile } = await supabase
+            .from("chat_profiles")
+            .select("id, display_name, avatar_emoji")
+            .eq("user_id", msg.user_id)
+            .eq("family_group_id", msg.family_group_id)
+            .order("created_at", { ascending: true })
+            .limit(1)
+            .single();
+
+          messagesWithNames.push({
+            id: msg.id,
+            content: msg.content,
+            senderId: msg.user_id,
+            senderName: profile?.display_name || "Unknown",
+            senderProfileId: msg.sender_profile_id || profile?.id,
+            timestamp: new Date(msg.created_at),
+            isOwn: msg.sender_profile_id === selectedMemberId,
+          });
+        }
+
+        setMessages((prev) => ({
+          ...prev,
+          [selectedConversationId]: messagesWithNames,
+        }));
+      }
+    } catch (error) {
+      console.error("Error refreshing messages:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [selectedConversationId]);
 
   // Fetch conversations on mount
   useEffect(() => {
@@ -273,6 +335,8 @@ export default function ChatPage() {
           title={chatTitle}
           memberCount={memberCount}
           onMenuClick={() => setSidebarOpen(true)}
+          onRefresh={handleRefreshMessages}
+          isRefreshing={isRefreshing}
         />
 
         <ConversationHeader
