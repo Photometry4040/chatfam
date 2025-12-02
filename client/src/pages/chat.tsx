@@ -285,6 +285,22 @@ export default function ChatPage() {
     },
   });
 
+  // Auto-polling when Realtime connection fails
+  useEffect(() => {
+    if (isConnected || !selectedConversationId) return;
+
+    console.log("Starting auto-polling due to connection loss...");
+    const pollInterval = setInterval(async () => {
+      try {
+        await handleRefreshMessages();
+      } catch (error) {
+        console.error("Auto-polling error:", error);
+      }
+    }, 15000); // Poll every 15 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [isConnected, selectedConversationId, handleRefreshMessages]);
+
   // Show messages for selected conversation
   const currentMessages = messages[selectedConversationId] || [];
   const currentMember = members.find((m) => m.id === selectedMemberId);
