@@ -43,25 +43,35 @@ export function useSupabaseRealtime({
           family_group_id,
           is_edited,
           edited_at,
-          created_at,
-          chat_profiles!user_id(display_name)
+          created_at
         `
         )
         .eq("family_group_id", familyGroupId)
         .order("created_at", { ascending: true })
         .limit(100);
 
-      const formattedMessages: Message[] = (messages || []).map((msg: any) => ({
-        id: msg.id,
-        content: msg.content,
-        senderId: msg.user_id,
-        senderName: msg.chat_profiles?.display_name || "Unknown",
-        roomId: msg.family_group_id,
-        timestamp: new Date(msg.created_at),
-        isEdited: msg.is_edited,
-        editedAt: msg.edited_at ? new Date(msg.edited_at) : undefined,
-        isDeleted: false,
-      }));
+      // Fetch messages and then get sender names
+      const messagesWithNames: Message[] = [];
+      for (const msg of messages || []) {
+        const { data: profile } = await supabase
+          .from("chat_profiles")
+          .select("display_name")
+          .eq("user_id", msg.user_id)
+          .single();
+
+        messagesWithNames.push({
+          id: msg.id,
+          content: msg.content,
+          senderId: msg.user_id,
+          senderName: profile?.display_name || "Unknown",
+          roomId: msg.family_group_id,
+          timestamp: new Date(msg.created_at),
+          isEdited: msg.is_edited,
+          editedAt: msg.edited_at ? new Date(msg.edited_at) : undefined,
+          isDeleted: false,
+        });
+      }
+      const formattedMessages = messagesWithNames;
 
       callbacksRef.current.onRoomHistory(familyGroupId, formattedMessages);
 
@@ -178,8 +188,7 @@ export function useSupabaseRealtime({
             family_group_id,
             is_edited,
             edited_at,
-            created_at,
-            chat_profiles!user_id(display_name)
+            created_at
           `
           )
           .single();
@@ -190,18 +199,14 @@ export function useSupabaseRealtime({
         }
 
         if (data) {
-          const displayName = Array.isArray(data.chat_profiles)
-            ? data.chat_profiles[0]?.display_name
-            : (data.chat_profiles as any)?.display_name;
-
           const message: Message = {
-            id: (data as any).id,
-            content: (data as any).content,
-            senderId: (data as any).user_id,
-            senderName: displayName || userName,
-            roomId: (data as any).family_group_id,
-            timestamp: new Date((data as any).created_at),
-            isEdited: false,
+            id: data.id,
+            content: data.content,
+            senderId: data.user_id,
+            senderName: userName,
+            roomId: data.family_group_id,
+            timestamp: new Date(data.created_at),
+            isEdited: data.is_edited,
             isDeleted: false,
           };
           callbacksRef.current.onMessage(message);

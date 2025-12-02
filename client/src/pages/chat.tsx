@@ -11,12 +11,10 @@ import { initializeSupabase } from "@/lib/initializeSupabase";
 import type { Message } from "@/components/chat/ChatMessage";
 import type { FamilyMember } from "@/components/chat/FamilyMemberItem";
 
-const CURRENT_USER_ID = "me";
-const CURRENT_USER_NAME = "나";
 const FAMILY_GROUP_ID = "a0000000-0000-0000-0000-000000000001"; // Default family group UUID
 
 // Fetch family members from Supabase
-async function fetchFamilyMembers(): Promise<FamilyMember[]> {
+async function fetchFamilyMembers(familyGroupId: string): Promise<FamilyMember[]> {
   try {
     // Query chat_family_members with joined profiles
     const { data, error } = await supabase
@@ -28,7 +26,7 @@ async function fetchFamilyMembers(): Promise<FamilyMember[]> {
         chat_profiles(display_name, avatar_emoji, status)
         `
       )
-      .eq("family_group_id", FAMILY_GROUP_ID)
+      .eq("family_group_id", familyGroupId)
       .order("joined_at", { ascending: true });
 
     if (error) {
@@ -57,10 +55,32 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Record<string, Message[]>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
+  const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [currentUserName, setCurrentUserName] = useState<string>("");
+
+  // Get current user info
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: user } = await supabase.auth.getUser();
+      if (user?.user) {
+        setCurrentUserId(user.user.id);
+        // Get user's display name from profile
+        const { data: profile } = await supabase
+          .from("chat_profiles")
+          .select("display_name")
+          .eq("user_id", user.user.id)
+          .single();
+        if (profile?.display_name) {
+          setCurrentUserName(profile.display_name);
+        }
+      }
+    };
+    getUser();
+  }, []);
 
   const { data: members = [] } = useQuery<FamilyMember[]>({
     queryKey: ["family-members", FAMILY_GROUP_ID],
-    queryFn: fetchFamilyMembers,
+    queryFn: () => fetchFamilyMembers(FAMILY_GROUP_ID),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
@@ -79,20 +99,20 @@ export default function ChatPage() {
       senderName: serverMessage.senderName,
       senderAvatar: serverMessage.senderAvatar,
       timestamp: new Date(serverMessage.timestamp),
-      isOwn: serverMessage.senderId === CURRENT_USER_ID,
+      isOwn: serverMessage.senderId === currentUserId,
     };
 
     setMessages((prev) => {
       const roomMessages = prev[serverMessage.roomId] || [];
       const exists = roomMessages.some((m) => m.id === message.id);
       if (exists) return prev;
-      
+
       return {
         ...prev,
         [serverMessage.roomId]: [...roomMessages, message],
       };
     });
-  }, []);
+  }, [currentUserId]);
 
   const handleRoomHistory = useCallback((roomId: string, serverMessages: any[]) => {
     const formattedMessages: Message[] = serverMessages.map((m) => ({
@@ -102,19 +122,19 @@ export default function ChatPage() {
       senderName: m.senderName,
       senderAvatar: m.senderAvatar,
       timestamp: new Date(m.timestamp),
-      isOwn: m.senderId === CURRENT_USER_ID,
+      isOwn: m.senderId === currentUserId,
     }));
 
     setMessages((prev) => ({
       ...prev,
       [roomId]: formattedMessages,
     }));
-  }, []);
+  }, [currentUserId]);
 
   const { isConnected, sendMessage, sendTyping } = useSupabaseRealtime({
     familyGroupId: FAMILY_GROUP_ID,
-    userId: CURRENT_USER_ID,
-    userName: CURRENT_USER_NAME,
+    userId: currentUserId,
+    userName: currentUserName,
     onMessage: handleNewMessage,
     onRoomHistory: handleRoomHistory,
     onTyping: (userId, userName) => {
