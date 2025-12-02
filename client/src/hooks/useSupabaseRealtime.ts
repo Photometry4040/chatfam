@@ -83,7 +83,9 @@ export function useSupabaseRealtime({
       }
       const formattedMessages = messagesWithNames;
 
-      callbacksRef.current.onRoomHistory(familyGroupId, formattedMessages);
+      // Use conversationId to group messages in the frontend
+      // If no conversationId, messages won't display (filtered by conversation)
+      callbacksRef.current.onRoomHistory(conversationId, formattedMessages);
 
       // Subscribe to new messages
       const messagesSubscription = supabase

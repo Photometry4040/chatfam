@@ -63,7 +63,8 @@ export default function ChatPage() {
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [currentUserName, setCurrentUserName] = useState<string>("");
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConversationId, setSelectedConversationId] = useState<string>("");
+  const [selectedConversationId, setSelectedConversationId] = useState<string>("")
+  const [isLoadingConversations, setIsLoadingConversations] = useState(true);
 
   // Get current user info and initialize selected member
   useEffect(() => {
@@ -92,17 +93,26 @@ export default function ChatPage() {
   // Fetch conversations from database
   const fetchConversations = useCallback(async () => {
     try {
+      setIsLoadingConversations(true);
       const { data } = await supabase
         .from("chat_conversations")
         .select("id, title, created_at")
         .eq("family_group_id", FAMILY_GROUP_ID)
         .order("created_at", { ascending: false });
 
-      setConversations(data || []);
+      const conversationsData = data || [];
+      setConversations(conversationsData);
+
+      // Auto-select first conversation if not already selected
+      if (conversationsData.length > 0 && !selectedConversationId) {
+        setSelectedConversationId(conversationsData[0].id);
+      }
     } catch (error) {
       console.error("Error fetching conversations:", error);
+    } finally {
+      setIsLoadingConversations(false);
     }
-  }, []);
+  }, [selectedConversationId]);
 
   // Create a new conversation
   const createConversation = useCallback(async (title: string) => {
@@ -136,13 +146,6 @@ export default function ChatPage() {
     fetchConversations();
   }, [fetchConversations]);
 
-  // Set default selected conversation when conversations load
-  useEffect(() => {
-    if (conversations.length > 0 && !selectedConversationId) {
-      setSelectedConversationId(conversations[0].id);
-    }
-  }, [conversations, selectedConversationId]);
-
   // Set default selected member when members load
   useEffect(() => {
     if (members.length > 0 && !selectedMemberId) {
@@ -164,18 +167,19 @@ export default function ChatPage() {
     };
 
     setMessages((prev) => {
-      const roomMessages = prev[serverMessage.roomId] || [];
-      const exists = roomMessages.some((m) => m.id === message.id);
+      const conversationKey = selectedConversationId;
+      const conversationMessages = prev[conversationKey] || [];
+      const exists = conversationMessages.some((m) => m.id === message.id);
       if (exists) return prev;
 
       return {
         ...prev,
-        [serverMessage.roomId]: [...roomMessages, message],
+        [conversationKey]: [...conversationMessages, message],
       };
     });
-  }, [selectedMemberId]);
+  }, [selectedMemberId, selectedConversationId]);
 
-  const handleRoomHistory = useCallback((roomId: string, serverMessages: any[]) => {
+  const handleRoomHistory = useCallback((conversationId: string, serverMessages: any[]) => {
     const formattedMessages: Message[] = serverMessages.map((m) => ({
       id: m.id,
       content: m.content,
@@ -189,7 +193,7 @@ export default function ChatPage() {
 
     setMessages((prev) => ({
       ...prev,
-      [roomId]: formattedMessages,
+      [conversationId]: formattedMessages,
     }));
   }, [selectedMemberId]);
 
@@ -217,8 +221,8 @@ export default function ChatPage() {
     },
   });
 
-  // Show all family group messages (not filtered by member)
-  const currentMessages = messages[FAMILY_GROUP_ID] || [];
+  // Show messages for selected conversation
+  const currentMessages = messages[selectedConversationId] || [];
   const currentMember = members.find((m) => m.id === selectedMemberId);
 
   const filteredMessages = searchQuery.trim()
