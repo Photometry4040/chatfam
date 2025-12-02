@@ -36,7 +36,15 @@ export function useSupabaseRealtime({
   // Setup Realtime subscriptions
   const setupSubscriptions = useCallback(async () => {
     if (!senderProfileId || !conversationId) return;
+
     try {
+      // Clean up previous subscriptions before setting up new ones
+      for (const subscription of subscriptionsRef.current) {
+        await supabase.removeChannel(subscription);
+      }
+      subscriptionsRef.current = [];
+      setIsConnected(false);
+
       // Load initial message history
       const { data: messages } = await supabase
         .from("chat_messages")
@@ -174,9 +182,17 @@ export function useSupabaseRealtime({
     setupSubscriptions();
 
     return () => {
+      // Clean up all active subscriptions
       subscriptionsRef.current.forEach((subscription) => {
-        supabase.removeChannel(subscription);
+        try {
+          supabase.removeChannel(subscription);
+        } catch (error) {
+          // Already removed, ignore error
+        }
       });
+      subscriptionsRef.current = [];
+
+      // Clear typing timeout
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
