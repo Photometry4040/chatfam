@@ -31,6 +31,7 @@ export interface Message {
   senderId: string;
   senderName: string;
   senderAvatar?: string;
+  senderProfileId?: string;
   roomId: string;
   timestamp: Date;
   isEdited?: boolean;

@@ -7,6 +7,7 @@ export interface Message {
   senderId: string;
   senderName: string;
   senderAvatar?: string;
+  senderProfileId?: string;
   timestamp: Date;
   isOwn: boolean;
   isRead?: boolean;

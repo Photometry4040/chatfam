@@ -94,8 +94,9 @@ export default function ChatPage() {
       senderId: serverMessage.senderId,
       senderName: serverMessage.senderName,
       senderAvatar: serverMessage.senderAvatar,
+      senderProfileId: serverMessage.senderProfileId,
       timestamp: new Date(serverMessage.timestamp),
-      isOwn: serverMessage.senderId === currentUserId,
+      isOwn: serverMessage.senderProfileId === selectedMemberId,
     };
 
     setMessages((prev) => {
@@ -108,7 +109,7 @@ export default function ChatPage() {
         [serverMessage.roomId]: [...roomMessages, message],
       };
     });
-  }, [currentUserId]);
+  }, [selectedMemberId]);
 
   const handleRoomHistory = useCallback((roomId: string, serverMessages: any[]) => {
     const formattedMessages: Message[] = serverMessages.map((m) => ({
@@ -117,15 +118,16 @@ export default function ChatPage() {
       senderId: m.senderId,
       senderName: m.senderName,
       senderAvatar: m.senderAvatar,
+      senderProfileId: m.senderProfileId,
       timestamp: new Date(m.timestamp),
-      isOwn: m.senderId === currentUserId,
+      isOwn: m.senderProfileId === selectedMemberId,
     }));
 
     setMessages((prev) => ({
       ...prev,
       [roomId]: formattedMessages,
     }));
-  }, [currentUserId]);
+  }, [selectedMemberId]);
 
   const { isConnected, sendMessage, sendTyping } = useSupabaseRealtime({
     familyGroupId: FAMILY_GROUP_ID,

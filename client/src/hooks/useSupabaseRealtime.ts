@@ -55,7 +55,7 @@ export function useSupabaseRealtime({
       for (const msg of messages || []) {
         const { data: profile } = await supabase
           .from("chat_profiles")
-          .select("display_name, avatar_emoji")
+          .select("id, display_name, avatar_emoji")
           .eq("user_id", msg.user_id)
           .eq("family_group_id", msg.family_group_id)
           .order("created_at", { ascending: true })
@@ -67,6 +67,7 @@ export function useSupabaseRealtime({
           content: msg.content,
           senderId: msg.user_id,
           senderName: profile?.display_name || "Unknown",
+          senderProfileId: profile?.id,
           roomId: msg.family_group_id,
           timestamp: new Date(msg.created_at),
           isEdited: msg.is_edited,
@@ -94,7 +95,7 @@ export function useSupabaseRealtime({
               // Fetch the sender's display name from family group profiles
               const { data: profile } = await supabase
                 .from("chat_profiles")
-                .select("display_name")
+                .select("id, display_name")
                 .eq("user_id", payload.new.user_id)
                 .eq("family_group_id", payload.new.family_group_id)
                 .order("created_at", { ascending: true })
@@ -106,6 +107,7 @@ export function useSupabaseRealtime({
                 content: payload.new.content,
                 senderId: payload.new.user_id,
                 senderName: profile?.display_name || "Unknown",
+                senderProfileId: profile?.id,
                 roomId: payload.new.family_group_id,
                 timestamp: new Date(payload.new.created_at),
                 isEdited: payload.new.is_edited,
