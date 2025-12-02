@@ -1,15 +1,26 @@
 {
   "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "env": {
-    "VITE_SUPABASE_URL": "@supabase_url",
-    "VITE_SUPABASE_ANON_KEY": "@supabase_anon_key",
-    "NODE_ENV": "production"
-  },
+  "outputDirectory": "dist/public",
+  "serverlessFunctionRegion": "icn1",
   "functions": {
     "dist/index.cjs": {
       "memory": 1024,
-      "maxDuration": 60
+      "maxDuration": 60,
+      "runtime": "nodejs20.x"
     }
-  }
+  },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/index.cjs"
+    },
+    {
+      "src": "/ws",
+      "dest": "/index.cjs"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
 }
