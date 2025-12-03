@@ -653,6 +653,81 @@ export default function ChatPage() {
     }
   }, [currentMessages, selectedConversationId]);
 
+  // Handle deleting a message (hard delete - only own messages)
+  const handleDeleteMessage = useCallback(async (messageId: string) => {
+    try {
+      const message = currentMessages.find(m => m.id === messageId);
+      if (!message) return;
+
+      // Only allow deleting own messages
+      if (message.senderId !== currentUserId) {
+        console.error("Can only delete own messages");
+        return;
+      }
+
+      // Delete from Supabase (hard delete - completely remove the record)
+      const { error } = await supabase
+        .from("chat_messages")
+        .delete()
+        .eq("id", messageId);
+
+      if (error) {
+        console.error("Error deleting message:", error);
+        return;
+      }
+
+      // Update local state - remove the message
+      setMessages((prev) => ({
+        ...prev,
+        [selectedConversationId]: prev[selectedConversationId].filter(
+          msg => msg.id !== messageId
+        ),
+      }));
+    } catch (error) {
+      console.error("Error in handleDeleteMessage:", error);
+    }
+  }, [currentMessages, selectedConversationId, currentUserId]);
+
+  // Handle pinning/unpinning a message (all family members can do this)
+  const handlePinMessage = useCallback(async (messageId: string, shouldPin: boolean) => {
+    try {
+      const message = currentMessages.find(m => m.id === messageId);
+      if (!message) return;
+
+      // Update in Supabase
+      const { error } = await supabase
+        .from("chat_messages")
+        .update({
+          is_pinned: shouldPin,
+          pinned_at: shouldPin ? new Date().toISOString() : null,
+          pinned_by_user_id: shouldPin ? currentUserId : null,
+        })
+        .eq("id", messageId);
+
+      if (error) {
+        console.error("Error pinning/unpinning message:", error);
+        return;
+      }
+
+      // Update local state
+      setMessages((prev) => ({
+        ...prev,
+        [selectedConversationId]: prev[selectedConversationId].map((msg) =>
+          msg.id === messageId
+            ? {
+                ...msg,
+                isPinned: shouldPin,
+                pinnedAt: shouldPin ? new Date() : undefined,
+                pinnedByUserId: shouldPin ? currentUserId : undefined,
+              }
+            : msg
+        ),
+      }));
+    } catch (error) {
+      console.error("Error in handlePinMessage:", error);
+    }
+  }, [currentMessages, selectedConversationId, currentUserId]);
+
   // Handle replying to a message
   const handleReplyTo = useCallback((messageId: string) => {
     const messageToReply = currentMessages.find(m => m.id === messageId);
@@ -831,6 +906,8 @@ export default function ChatPage() {
           onReply={handleReplyTo}
           onReact={handleReact}
           onRemoveReaction={handleRemoveReaction}
+          onDelete={handleDeleteMessage}
+          onPin={handlePinMessage}
         />
 
         <ChatInput

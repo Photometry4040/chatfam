@@ -92,11 +92,16 @@ export function useSupabaseRealtime({
           is_edited,
           edited_at,
           is_read,
+          is_deleted,
+          is_pinned,
+          pinned_at,
+          pinned_by_user_id,
           created_at
         `
         )
         .eq("family_group_id", familyGroupId)
         .eq("conversation_id", conversationId)
+        .eq("is_deleted", false) // Only load non-deleted messages
         .order("created_at", { ascending: true })
         .limit(100);
 
@@ -149,7 +154,10 @@ export function useSupabaseRealtime({
           timestamp: new Date(msg.created_at),
           isEdited: msg.is_edited,
           editedAt: msg.edited_at ? new Date(msg.edited_at) : undefined,
-          isDeleted: false,
+          isDeleted: msg.is_deleted ?? false,
+          isPinned: msg.is_pinned ?? false,
+          pinnedAt: msg.pinned_at ? new Date(msg.pinned_at) : undefined,
+          pinnedByUserId: msg.pinned_by_user_id,
           parentMessageId: msg.parent_message_id,
           isRead: msg.is_read ?? false,
           reactions: messageReactions,
@@ -190,10 +198,17 @@ export function useSupabaseRealtime({
                 roomId: payload.new.family_group_id,
                 timestamp: new Date(payload.new.created_at),
                 isEdited: payload.new.is_edited,
-                isDeleted: false,
+                isDeleted: payload.new.is_deleted ?? false,
+                isPinned: payload.new.is_pinned ?? false,
+                pinnedAt: payload.new.pinned_at ? new Date(payload.new.pinned_at) : undefined,
+                pinnedByUserId: payload.new.pinned_by_user_id,
                 isRead: payload.new.is_read ?? false,
               };
-              callbacksRef.current.onMessage(newMessage);
+
+              // Only send message callback if not deleted
+              if (!payload.new.is_deleted) {
+                callbacksRef.current.onMessage(newMessage);
+              }
             }
           }
         )
@@ -307,6 +322,10 @@ export function useSupabaseRealtime({
             is_edited,
             edited_at,
             is_read,
+            is_deleted,
+            is_pinned,
+            pinned_at,
+            pinned_by_user_id,
             created_at
           `
           )
@@ -327,7 +346,10 @@ export function useSupabaseRealtime({
             roomId: data.family_group_id,
             timestamp: new Date(data.created_at),
             isEdited: data.is_edited,
-            isDeleted: false,
+            isDeleted: data.is_deleted ?? false,
+            isPinned: data.is_pinned ?? false,
+            pinnedAt: data.pinned_at ? new Date(data.pinned_at) : undefined,
+            pinnedByUserId: data.pinned_by_user_id,
             parentMessageId: data.parent_message_id,
             isRead: true, // Own messages are always read
           };

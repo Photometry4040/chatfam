@@ -22,6 +22,9 @@ export interface Message {
   reactions?: Record<string, Reaction>; // emoji -> Reaction mapping
   isEdited?: boolean;
   editedAt?: Date;
+  isPinned?: boolean;
+  pinnedAt?: Date;
+  pinnedByUserId?: string;
   parentMessageId?: string; // ID of message being replied to
   parentMessage?: Message; // Preview of parent message
 }
@@ -33,6 +36,8 @@ interface ChatMessageProps {
   onRemoveReaction?: (messageId: string, emoji: string) => void;
   onEdit?: (messageId: string, newContent: string) => void;
   onReply?: (messageId: string) => void;
+  onDelete?: (messageId: string) => void;
+  onPin?: (messageId: string, shouldPin: boolean) => void;
 }
 
 function formatTime(date: Date): string {
@@ -64,7 +69,9 @@ export default function ChatMessage({
   onReact,
   onRemoveReaction,
   onEdit,
-  onReply
+  onReply,
+  onDelete,
+  onPin
 }: ChatMessageProps) {
   const [showReactionMenu, setShowReactionMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
@@ -271,6 +278,27 @@ export default function ChatMessage({
                     {emoji}
                   </button>
                 ))}
+                {message.isOwn && (
+                  <button
+                    onClick={() => onDelete?.(message.id)}
+                    className="p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-900 text-sm"
+                    title="Delete message"
+                  >
+                    🗑️
+                  </button>
+                )}
+                <button
+                  onClick={() => onPin?.(message.id, !message.isPinned)}
+                  className={cn(
+                    "p-1 rounded-full text-sm",
+                    message.isPinned
+                      ? "bg-yellow-100 dark:bg-yellow-900"
+                      : "hover:bg-muted"
+                  )}
+                  title={message.isPinned ? "Unpin message" : "Pin message"}
+                >
+                  📌
+                </button>
               </div>
             </>
           )}

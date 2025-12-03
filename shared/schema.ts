@@ -46,6 +46,8 @@ export interface Message {
   isDeleted?: boolean;
   reactions?: Record<string, Reaction>;
   isPinned?: boolean;
+  pinnedAt?: Date;
+  pinnedByUserId?: string;
   parentMessageId?: string;
   parentMessage?: Message;
   isRead?: boolean;
