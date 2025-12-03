@@ -19,11 +19,12 @@ export default function ChatInput({
   onCancelReply
 }: ChatInputProps) {
   const [message, setMessage] = useState("");
+  const [isComposing, setIsComposing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = () => {
     const trimmed = message.trim();
-    if (trimmed && !disabled) {
+    if (trimmed && !disabled && !isComposing) {
       onSendMessage(trimmed);
       setMessage("");
       if (textareaRef.current) {
@@ -33,7 +34,7 @@ export default function ChatInput({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && !isComposing) {
       e.preventDefault();
       handleSubmit();
     }
@@ -79,6 +80,8 @@ export default function ChatInput({
               onInputChange?.();
             }}
             onKeyDown={handleKeyDown}
+            onCompositionStart={() => setIsComposing(true)}
+            onCompositionEnd={() => setIsComposing(false)}
             placeholder="메시지를 입력하세요..."
             disabled={disabled}
             rows={1}
