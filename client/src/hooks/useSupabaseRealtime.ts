@@ -91,6 +91,7 @@ export function useSupabaseRealtime({
           parent_message_id,
           is_edited,
           edited_at,
+          is_read,
           created_at
         `
         )
@@ -150,6 +151,7 @@ export function useSupabaseRealtime({
           editedAt: msg.edited_at ? new Date(msg.edited_at) : undefined,
           isDeleted: false,
           parentMessageId: msg.parent_message_id,
+          isRead: msg.is_read ?? false,
           reactions: messageReactions,
         });
       }
@@ -189,6 +191,7 @@ export function useSupabaseRealtime({
                 timestamp: new Date(payload.new.created_at),
                 isEdited: payload.new.is_edited,
                 isDeleted: false,
+                isRead: payload.new.is_read ?? false,
               };
               callbacksRef.current.onMessage(newMessage);
             }
@@ -324,6 +327,7 @@ export function useSupabaseRealtime({
             isEdited: data.is_edited,
             isDeleted: false,
             parentMessageId: data.parent_message_id,
+            isRead: true, // Own messages are always read
           };
           callbacksRef.current.onMessage(message);
         }

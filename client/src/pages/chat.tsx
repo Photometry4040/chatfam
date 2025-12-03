@@ -71,6 +71,8 @@ export default function ChatPage() {
   const [lastReadMessageId, setLastReadMessageId] = useState<Record<string, string>>({}); // Track last read message per conversation
   const [replyingToMessageId, setReplyingToMessageId] = useState<string | null>(null); // Current message being replied to
   const [replyingToMessage, setReplyingToMessage] = useState<Message | null>(null); // Preview of message being replied to
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({}); // Unread count per conversation
+  const [totalUnreadCount, setTotalUnreadCount] = useState(0); // Total unread count across all conversations
 
   // Get current user info and initialize selected member
   useEffect(() => {
@@ -246,6 +248,22 @@ export default function ChatPage() {
     }
   }, [members, selectedMemberId]);
 
+  // Mark conversation as read when selected
+  useEffect(() => {
+    if (selectedConversationId) {
+      setUnreadCounts((prev) => ({
+        ...prev,
+        [selectedConversationId]: 0,
+      }));
+    }
+  }, [selectedConversationId]);
+
+  // Calculate total unread count whenever unreadCounts changes
+  useEffect(() => {
+    const total = Object.values(unreadCounts).reduce((sum, count) => sum + count, 0);
+    setTotalUnreadCount(total);
+  }, [unreadCounts]);
+
   const handleNewMessage = useCallback((serverMessage: any) => {
     const isOwn = serverMessage.senderProfileId === selectedMemberId;
 
@@ -258,6 +276,7 @@ export default function ChatPage() {
       senderProfileId: serverMessage.senderProfileId,
       timestamp: new Date(serverMessage.timestamp),
       isOwn,
+      isRead: isOwn ? true : (serverMessage.isRead ?? false), // Own messages are marked as read, others depend on DB value
       parentMessageId: serverMessage.parentMessageId,
     };
 
@@ -280,6 +299,14 @@ export default function ChatPage() {
         [conversationKey]: [...conversationMessages, { ...message, parentMessage }],
       };
     });
+
+    // Update unread count if this is not the user's own message
+    if (!isOwn) {
+      setUnreadCounts((prev) => ({
+        ...prev,
+        [conversationKey]: (prev[conversationKey] || 0) + 1,
+      }));
+    }
   }, [selectedMemberId, selectedConversationId]);
 
   const handleRoomHistory = useCallback((conversationId: string, serverMessages: any[]) => {
@@ -322,6 +349,13 @@ export default function ChatPage() {
     setMessages((prev) => ({
       ...prev,
       [conversationId]: formattedMessages,
+    }));
+
+    // Calculate unread count for this conversation
+    const unreadCount = formattedMessages.filter(m => !m.isOwn && !m.isRead).length;
+    setUnreadCounts((prev) => ({
+      ...prev,
+      [conversationId]: unreadCount,
     }));
   }, [selectedMemberId]);
 
