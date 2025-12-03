@@ -75,6 +75,7 @@ export default function ChatPage() {
   const [replyingToMessage, setReplyingToMessage] = useState<Message | null>(null); // Preview of message being replied to
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({}); // Unread count per conversation
   const [totalUnreadCount, setTotalUnreadCount] = useState(0); // Total unread count across all conversations
+  const [lastReadMessageIds, setLastReadMessageIds] = useState<Record<string, string>>({}); // Last read message ID per conversation
 
   // Use hooks for Page Visibility API and Notifications
   useUnreadBadgeTitle(totalUnreadCount);
@@ -254,35 +255,68 @@ export default function ChatPage() {
     }
   }, [members, selectedMemberId]);
 
-  // Mark conversation as read when selected (both frontend and database)
+  // Fetch and update read status when conversation is selected
   useEffect(() => {
-    if (selectedConversationId) {
-      // Update frontend state
-      setUnreadCounts((prev) => ({
-        ...prev,
-        [selectedConversationId]: 0,
-      }));
-
-      // Update database: mark all unread messages in this conversation as read
-      const markMessagesAsRead = async () => {
+    if (selectedConversationId && currentUserId) {
+      const fetchAndUpdateReadStatus = async () => {
         try {
-          const { error } = await supabase
+          // Get the latest message ID in this conversation
+          const { data: latestMessage } = await supabase
             .from("chat_messages")
-            .update({ is_read: true })
+            .select("id")
             .eq("conversation_id", selectedConversationId)
-            .eq("is_read", false);
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single();
+
+          if (!latestMessage) return;
+
+          // Fetch current read status
+          const { data: readStatus } = await supabase
+            .from("chat_conversation_read_status")
+            .select("last_read_message_id")
+            .eq("conversation_id", selectedConversationId)
+            .eq("user_id", currentUserId)
+            .single();
+
+          // Update frontend state with current read status
+          setLastReadMessageIds((prev) => ({
+            ...prev,
+            [selectedConversationId]: readStatus?.last_read_message_id || "",
+          }));
+
+          // Update frontend unread count to 0 (will be recalculated in handleRoomHistory)
+          setUnreadCounts((prev) => ({
+            ...prev,
+            [selectedConversationId]: 0,
+          }));
+
+          // Update database: set last_read_message_id to latest message
+          const { error } = await supabase
+            .from("chat_conversation_read_status")
+            .upsert(
+              {
+                conversation_id: selectedConversationId,
+                user_id: currentUserId,
+                last_read_message_id: latestMessage.id,
+                last_read_at: new Date().toISOString(),
+              },
+              {
+                onConflict: "conversation_id,user_id",
+              }
+            );
 
           if (error) {
-            console.error("Error marking messages as read:", error);
+            console.error("Error updating read status:", error);
           }
         } catch (err) {
-          console.error("Failed to mark messages as read:", err);
+          console.error("Failed to fetch/update read status:", err);
         }
       };
 
-      markMessagesAsRead();
+      fetchAndUpdateReadStatus();
     }
-  }, [selectedConversationId]);
+  }, [selectedConversationId, currentUserId]);
 
   // Calculate total unread count whenever unreadCounts changes
   useEffect(() => {
@@ -326,8 +360,11 @@ export default function ChatPage() {
       };
     });
 
-    // Update unread count if this is not the user's own message
+    // Update unread count if this is not the user's own message and after last read message
     if (!isOwn) {
+      const lastReadMessageId = lastReadMessageIds[conversationKey];
+      // Only increment if there's no read status yet or this message is newer than last read
+      // (New messages are always unread since they haven't been read yet)
       setUnreadCounts((prev) => ({
         ...prev,
         [conversationKey]: (prev[conversationKey] || 0) + 1,
@@ -341,7 +378,7 @@ export default function ChatPage() {
         });
       }
     }
-  }, [selectedMemberId, selectedConversationId, showNotification]);
+  }, [selectedMemberId, selectedConversationId, showNotification, lastReadMessageIds]);
 
   const handleRoomHistory = useCallback((conversationId: string, serverMessages: any[]) => {
     const formattedMessages: Message[] = serverMessages.map((m) => {
@@ -385,13 +422,27 @@ export default function ChatPage() {
       [conversationId]: formattedMessages,
     }));
 
-    // Calculate unread count for this conversation
-    const unreadCount = formattedMessages.filter(m => !m.isOwn && !m.isRead).length;
+    // Calculate unread count for this conversation based on last_read_message_id
+    const lastReadMessageId = lastReadMessageIds[conversationId];
+    let unreadCount = 0;
+
+    if (lastReadMessageId) {
+      // Find the index of the last read message
+      const lastReadIndex = formattedMessages.findIndex(m => m.id === lastReadMessageId);
+      // Count unread messages after the last read message (not from current user)
+      unreadCount = formattedMessages
+        .slice(lastReadIndex + 1)
+        .filter(m => !m.isOwn).length;
+    } else {
+      // If no read status exists, count all non-own messages
+      unreadCount = formattedMessages.filter(m => !m.isOwn).length;
+    }
+
     setUnreadCounts((prev) => ({
       ...prev,
       [conversationId]: unreadCount,
     }));
-  }, [selectedMemberId]);
+  }, [selectedMemberId, lastReadMessageIds]);
 
   // Helper function to transform reactions
   const transformReactions = (reactions: any[], userId: string) => {
