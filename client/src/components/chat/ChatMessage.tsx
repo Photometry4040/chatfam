@@ -22,6 +22,8 @@ export interface Message {
   reactions?: Record<string, Reaction>; // emoji -> Reaction mapping
   isEdited?: boolean;
   editedAt?: Date;
+  parentMessageId?: string; // ID of message being replied to
+  parentMessage?: Message; // Preview of parent message
 }
 
 interface ChatMessageProps {
@@ -30,6 +32,7 @@ interface ChatMessageProps {
   onReact?: (messageId: string, emoji: string) => void;
   onRemoveReaction?: (messageId: string, emoji: string) => void;
   onEdit?: (messageId: string, newContent: string) => void;
+  onReply?: (messageId: string) => void;
 }
 
 function formatTime(date: Date): string {
@@ -60,7 +63,8 @@ export default function ChatMessage({
   showSender = true,
   onReact,
   onRemoveReaction,
-  onEdit
+  onEdit,
+  onReply
 }: ChatMessageProps) {
   const [showReactionMenu, setShowReactionMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
@@ -174,10 +178,26 @@ export default function ChatMessage({
             "px-4 py-3 rounded-2xl break-words group cursor-context-menu relative",
             message.isOwn
               ? "bg-primary text-primary-foreground rounded-tr-md"
-              : "bg-card border border-card-border rounded-tl-md"
+              : "bg-card border border-card-border rounded-tl-md",
+            message.parentMessageId && "border-l-4 border-muted-foreground/50 pl-3"
           )}
           onContextMenu={handleContextMenu}
         >
+          {/* Parent message preview */}
+          {message.parentMessage && (
+            <div className={cn(
+              "text-xs mb-2 pb-2 border-b border-muted-foreground/20",
+              message.isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
+            )}>
+              <div className="font-semibold opacity-80 mb-1">
+                ↪️ {message.parentMessage.senderName}에게 답장
+              </div>
+              <div className="opacity-70 truncate">
+                {message.parentMessage.content}
+              </div>
+            </div>
+          )}
+
           {isEditing ? (
             <div className="flex flex-col gap-2">
               <textarea
@@ -223,8 +243,15 @@ export default function ChatMessage({
                 )}
               </div>
 
-              {/* Quick reaction buttons & edit button on hover */}
-              <div className="absolute -right-16 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 pointer-events-none group-hover:pointer-events-auto">
+              {/* Quick reaction buttons, edit button & reply button on hover */}
+              <div className="absolute -right-20 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 pointer-events-none group-hover:pointer-events-auto">
+                <button
+                  onClick={() => onReply?.(message.id)}
+                  className="p-1 rounded-full hover:bg-muted text-sm"
+                  title="Reply to this message"
+                >
+                  ↩️
+                </button>
                 {canEdit() && (
                   <button
                     onClick={handleEditStart}

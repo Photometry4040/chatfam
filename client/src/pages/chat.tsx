@@ -69,6 +69,8 @@ export default function ChatPage() {
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastReadMessageId, setLastReadMessageId] = useState<Record<string, string>>({}); // Track last read message per conversation
+  const [replyingToMessageId, setReplyingToMessageId] = useState<string | null>(null); // Current message being replied to
+  const [replyingToMessage, setReplyingToMessage] = useState<Message | null>(null); // Preview of message being replied to
 
   // Get current user info and initialize selected member
   useEffect(() => {
@@ -161,6 +163,7 @@ export default function ChatPage() {
           user_id,
           family_group_id,
           sender_profile_id,
+          parent_message_id,
           is_edited,
           edited_at,
           created_at
@@ -182,6 +185,29 @@ export default function ChatPage() {
 
           const isOwn = msg.sender_profile_id === selectedMemberId;
 
+          // Find parent message if this is a reply
+          let parentMessage: Message | undefined;
+          if (msg.parent_message_id) {
+            const parent = messages.find(m => m.id === msg.parent_message_id);
+            if (parent) {
+              const { data: parentProfile } = await supabase
+                .from("chat_profiles")
+                .select("id, display_name, avatar_emoji")
+                .eq("id", parent.sender_profile_id)
+                .single();
+
+              parentMessage = {
+                id: parent.id,
+                content: parent.content,
+                senderId: parent.user_id,
+                senderName: parentProfile?.display_name || "Unknown",
+                senderProfileId: parent.sender_profile_id,
+                timestamp: new Date(parent.created_at),
+                isOwn: parent.sender_profile_id === selectedMemberId,
+              };
+            }
+          }
+
           messagesWithNames.push({
             id: msg.id,
             content: msg.content,
@@ -190,6 +216,8 @@ export default function ChatPage() {
             senderProfileId: msg.sender_profile_id,
             timestamp: new Date(msg.created_at),
             isOwn,
+            parentMessageId: msg.parent_message_id,
+            parentMessage,
           });
         }
 
@@ -230,6 +258,7 @@ export default function ChatPage() {
       senderProfileId: serverMessage.senderProfileId,
       timestamp: new Date(serverMessage.timestamp),
       isOwn,
+      parentMessageId: serverMessage.parentMessageId,
     };
 
     // Capture conversationKey before setState to ensure correct conversation is updated
@@ -240,9 +269,15 @@ export default function ChatPage() {
       const exists = conversationMessages.some((m) => m.id === message.id);
       if (exists) return prev;
 
+      // Find parent message if this is a reply
+      let parentMessage: Message | undefined;
+      if (serverMessage.parentMessageId) {
+        parentMessage = conversationMessages.find(m => m.id === serverMessage.parentMessageId);
+      }
+
       return {
         ...prev,
-        [conversationKey]: [...conversationMessages, message],
+        [conversationKey]: [...conversationMessages, { ...message, parentMessage }],
       };
     });
   }, [selectedMemberId, selectedConversationId]);
@@ -250,6 +285,24 @@ export default function ChatPage() {
   const handleRoomHistory = useCallback((conversationId: string, serverMessages: any[]) => {
     const formattedMessages: Message[] = serverMessages.map((m) => {
       const isOwn = m.senderProfileId === selectedMemberId;
+
+      // Find parent message if this is a reply
+      let parentMessage: Message | undefined;
+      if (m.parentMessageId) {
+        const parentMsg = serverMessages.find(msg => msg.id === m.parentMessageId);
+        if (parentMsg) {
+          parentMessage = {
+            id: parentMsg.id,
+            content: parentMsg.content,
+            senderId: parentMsg.senderId,
+            senderName: parentMsg.senderName,
+            senderProfileId: parentMsg.senderProfileId,
+            timestamp: new Date(parentMsg.timestamp),
+            isOwn: parentMsg.senderProfileId === selectedMemberId,
+          };
+        }
+      }
+
       return {
         id: m.id,
         content: m.content,
@@ -259,6 +312,8 @@ export default function ChatPage() {
         senderProfileId: m.senderProfileId,
         timestamp: new Date(m.timestamp),
         isOwn,
+        parentMessageId: m.parentMessageId,
+        parentMessage,
       };
     });
 
@@ -309,6 +364,12 @@ export default function ChatPage() {
     return () => clearInterval(pollInterval);
   }, [isConnected, selectedConversationId, handleRefreshMessages]);
 
+  // Cancel reply mode
+  const handleCancelReply = useCallback(() => {
+    setReplyingToMessageId(null);
+    setReplyingToMessage(null);
+  }, []);
+
   // Show messages for selected conversation
   const currentMessages = messages[selectedConversationId] || [];
   const currentMember = members.find((m) => m.id === selectedMemberId);
@@ -321,9 +382,11 @@ export default function ChatPage() {
 
   const handleSendMessage = useCallback(
     (content: string) => {
-      sendMessage(content);
+      sendMessage(content, replyingToMessageId || undefined);
+      // Clear reply state after sending
+      handleCancelReply();
     },
-    [sendMessage]
+    [sendMessage, replyingToMessageId, handleCancelReply]
   );
 
   const handleSelectMember = useCallback((memberId: string) => {
@@ -397,6 +460,15 @@ export default function ChatPage() {
     }
   }, [currentMessages, selectedConversationId]);
 
+  // Handle replying to a message
+  const handleReplyTo = useCallback((messageId: string) => {
+    const messageToReply = currentMessages.find(m => m.id === messageId);
+    if (messageToReply) {
+      setReplyingToMessageId(messageId);
+      setReplyingToMessage(messageToReply);
+    }
+  }, [currentMessages]);
+
   const chatTitle = currentMember?.name || "채팅";
   const memberCount = selectedMemberId === "group" ? members.length - 1 : undefined;
   const typingNames = Array.from(typingUsers)
@@ -443,11 +515,14 @@ export default function ChatPage() {
           lastReadMessageId={lastReadMessageId[selectedConversationId]}
           onLastVisibleMessage={handleLastVisibleMessage}
           onEdit={handleEditMessage}
+          onReply={handleReplyTo}
         />
-        
+
         <ChatInput
           onSendMessage={handleSendMessage}
           onInputChange={() => sendTyping()}
+          replyingToMessage={replyingToMessage}
+          onCancelReply={handleCancelReply}
         />
       </div>
     </div>

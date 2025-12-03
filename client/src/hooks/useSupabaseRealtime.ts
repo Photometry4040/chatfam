@@ -55,6 +55,7 @@ export function useSupabaseRealtime({
           user_id,
           family_group_id,
           sender_profile_id,
+          parent_message_id,
           is_edited,
           edited_at,
           created_at
@@ -85,6 +86,7 @@ export function useSupabaseRealtime({
           isEdited: msg.is_edited,
           editedAt: msg.edited_at ? new Date(msg.edited_at) : undefined,
           isDeleted: false,
+          parentMessageId: msg.parent_message_id,
         });
       }
       const formattedMessages = messagesWithNames;
@@ -197,7 +199,7 @@ export function useSupabaseRealtime({
   }, [setupSubscriptions]);
 
   const sendMessage = useCallback(
-    async (content: string) => {
+    async (content: string, parentMessageId?: string) => {
       try {
         const { data, error } = await supabase
           .from("chat_messages")
@@ -208,6 +210,7 @@ export function useSupabaseRealtime({
             conversation_id: conversationId,
             content,
             message_type: "text",
+            parent_message_id: parentMessageId || null,
           })
           .select(
             `
@@ -216,6 +219,7 @@ export function useSupabaseRealtime({
             user_id,
             family_group_id,
             sender_profile_id,
+            parent_message_id,
             is_edited,
             edited_at,
             created_at
@@ -239,6 +243,7 @@ export function useSupabaseRealtime({
             timestamp: new Date(data.created_at),
             isEdited: data.is_edited,
             isDeleted: false,
+            parentMessageId: data.parent_message_id,
           };
           callbacksRef.current.onMessage(message);
         }

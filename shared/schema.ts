@@ -39,6 +39,10 @@ export interface Message {
   isDeleted?: boolean;
   reactions?: Record<string, string[]>;
   isPinned?: boolean;
+  parentMessageId?: string;
+  parentMessage?: Message;
+  isRead?: boolean;
+  isOwn?: boolean;
 }
 
 export interface FamilyGroup {

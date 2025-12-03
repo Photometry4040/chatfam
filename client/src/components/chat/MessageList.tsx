@@ -10,6 +10,7 @@ interface MessageListProps {
   lastReadMessageId?: string;
   onLastVisibleMessage?: (messageId: string | null) => void;
   onEdit?: (messageId: string, newContent: string) => void;
+  onReply?: (messageId: string) => void;
 }
 
 function isSameDay(date1: Date, date2: Date): boolean {
@@ -26,7 +27,8 @@ export default function MessageList({
   typingNames = [],
   lastReadMessageId,
   onLastVisibleMessage,
-  onEdit
+  onEdit,
+  onReply
 }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -147,6 +149,7 @@ export default function MessageList({
                     message={{ ...message, isRead }}
                     showSender={showSender}
                     onEdit={onEdit}
+                    onReply={onReply}
                   />
                 </div>
               );
