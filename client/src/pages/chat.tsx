@@ -247,11 +247,27 @@ export default function ChatPage() {
     fetchConversations();
   }, [fetchConversations]);
 
-  // Set default selected member when members load
+  // Set default selected member when members load (restore from localStorage)
   useEffect(() => {
     if (members.length > 0 && !selectedMemberId) {
-      setSelectedMemberId(members[0].id);
-      setCurrentUserName(members[0].name);
+      // Try to get previously selected member from localStorage
+      const savedMemberId = localStorage.getItem("selectedMemberId");
+
+      // Check if saved member still exists in current members list
+      const memberExists = members.some(m => m.id === savedMemberId);
+
+      if (memberExists && savedMemberId) {
+        // Use previously selected member
+        const selectedMember = members.find(m => m.id === savedMemberId);
+        if (selectedMember) {
+          setSelectedMemberId(selectedMember.id);
+          setCurrentUserName(selectedMember.name);
+        }
+      } else {
+        // Use first member as fallback
+        setSelectedMemberId(members[0].id);
+        setCurrentUserName(members[0].name);
+      }
     }
   }, [members, selectedMemberId]);
 
@@ -572,6 +588,8 @@ export default function ChatPage() {
     const member = members.find((m) => m.id === memberId);
     if (member) {
       setCurrentUserName(member.name);
+      // Save selected member to localStorage for persistence across sessions
+      localStorage.setItem("selectedMemberId", memberId);
     }
   }, [members]);
 
