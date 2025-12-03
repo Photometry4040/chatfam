@@ -8,6 +8,7 @@ interface ChatHeaderProps {
   showMenuButton?: boolean;
   onRefresh?: () => void;
   isRefreshing?: boolean;
+  totalUnreadCount?: number;
 }
 
 export default function ChatHeader({
@@ -16,7 +17,8 @@ export default function ChatHeader({
   onMenuClick,
   showMenuButton = true,
   onRefresh,
-  isRefreshing = false
+  isRefreshing = false,
+  totalUnreadCount = 0
 }: ChatHeaderProps) {
   return (
     <header className="h-14 flex items-center justify-between gap-2 px-4 border-b border-border bg-background sticky top-0 z-50">
@@ -35,6 +37,11 @@ export default function ChatHeader({
       
       <div className="flex-1 flex items-center justify-center gap-2">
         <h1 className="text-lg font-semibold truncate">{title}</h1>
+        {totalUnreadCount > 0 && (
+          <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5 font-semibold">
+            {totalUnreadCount > 99 ? "99+" : totalUnreadCount}
+          </span>
+        )}
         {memberCount !== undefined && (
           <span className="flex items-center gap-1 text-sm text-muted-foreground">
             <Users className="w-4 h-4" />

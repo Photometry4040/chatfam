@@ -8,6 +8,8 @@ import FamilySidebar from "@/components/chat/FamilySidebar";
 import SearchMessages from "@/components/chat/SearchMessages";
 import ConversationHeader from "@/components/chat/ConversationHeader";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
+import { useUnreadBadgeTitle } from "@/hooks/usePageVisibility";
+import { useNotifications } from "@/hooks/useNotifications";
 import { supabase } from "@/lib/supabase";
 import { initializeSupabase } from "@/lib/initializeSupabase";
 import type { Message } from "@/components/chat/ChatMessage";
@@ -73,6 +75,10 @@ export default function ChatPage() {
   const [replyingToMessage, setReplyingToMessage] = useState<Message | null>(null); // Preview of message being replied to
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({}); // Unread count per conversation
   const [totalUnreadCount, setTotalUnreadCount] = useState(0); // Total unread count across all conversations
+
+  // Use hooks for Page Visibility API and Notifications
+  useUnreadBadgeTitle(totalUnreadCount);
+  const { showNotification } = useNotifications({ enabled: true });
 
   // Get current user info and initialize selected member
   useEffect(() => {
@@ -306,8 +312,16 @@ export default function ChatPage() {
         ...prev,
         [conversationKey]: (prev[conversationKey] || 0) + 1,
       }));
+
+      // Show notification if tab is hidden and not user's own message
+      if (document.hidden) {
+        showNotification(`새로운 메시지: ${serverMessage.senderName}`, {
+          body: serverMessage.content.substring(0, 100),
+          tag: "chat-message",
+        });
+      }
     }
-  }, [selectedMemberId, selectedConversationId]);
+  }, [selectedMemberId, selectedConversationId, showNotification]);
 
   const handleRoomHistory = useCallback((conversationId: string, serverMessages: any[]) => {
     const formattedMessages: Message[] = serverMessages.map((m) => {
@@ -701,6 +715,7 @@ export default function ChatPage() {
           onMenuClick={() => setSidebarOpen(true)}
           onRefresh={handleRefreshMessages}
           isRefreshing={isRefreshing}
+          totalUnreadCount={totalUnreadCount}
         />
 
         <ConversationHeader
@@ -708,6 +723,7 @@ export default function ChatPage() {
           selectedConversationId={selectedConversationId}
           onSelectConversation={setSelectedConversationId}
           onCreateConversation={createConversation}
+          unreadCounts={unreadCounts}
         />
 
         <SearchMessages
