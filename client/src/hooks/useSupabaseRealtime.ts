@@ -294,6 +294,7 @@ export function useSupabaseRealtime({
             content,
             message_type: "text",
             parent_message_id: parentMessageId || null,
+            is_read: true, // Own messages are always read
           })
           .select(
             `
@@ -305,6 +306,7 @@ export function useSupabaseRealtime({
             parent_message_id,
             is_edited,
             edited_at,
+            is_read,
             created_at
           `
           )
