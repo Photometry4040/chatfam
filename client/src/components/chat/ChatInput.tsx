@@ -24,6 +24,7 @@ export default function ChatInput({
 
   const handleSubmit = () => {
     const trimmed = message.trim();
+    // Prevent submission during IME composition
     if (trimmed && !disabled && !isComposing) {
       onSendMessage(trimmed);
       setMessage("");
@@ -34,7 +35,9 @@ export default function ChatInput({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey && !isComposing) {
+    // Check nativeEvent.isComposing for IME state to prevent sending during composition
+    const isIMEComposing = (e.nativeEvent as any).isComposing || isComposing;
+    if (e.key === "Enter" && !e.shiftKey && !isIMEComposing) {
       e.preventDefault();
       handleSubmit();
     }
