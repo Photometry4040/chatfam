@@ -254,13 +254,33 @@ export default function ChatPage() {
     }
   }, [members, selectedMemberId]);
 
-  // Mark conversation as read when selected
+  // Mark conversation as read when selected (both frontend and database)
   useEffect(() => {
     if (selectedConversationId) {
+      // Update frontend state
       setUnreadCounts((prev) => ({
         ...prev,
         [selectedConversationId]: 0,
       }));
+
+      // Update database: mark all unread messages in this conversation as read
+      const markMessagesAsRead = async () => {
+        try {
+          const { error } = await supabase
+            .from("chat_messages")
+            .update({ is_read: true })
+            .eq("conversation_id", selectedConversationId)
+            .eq("is_read", false);
+
+          if (error) {
+            console.error("Error marking messages as read:", error);
+          }
+        } catch (err) {
+          console.error("Failed to mark messages as read:", err);
+        }
+      };
+
+      markMessagesAsRead();
     }
   }, [selectedConversationId]);
 
