@@ -347,6 +347,56 @@ export default function ChatPage() {
     }
   }, [selectedConversationId]);
 
+  // Handle message editing
+  const handleEditMessage = useCallback(async (messageId: string, newContent: string) => {
+    try {
+      // Check if message can still be edited (5-minute window)
+      const message = currentMessages.find(m => m.id === messageId);
+      if (!message) return;
+
+      const now = new Date();
+      const messageTime = new Date(message.timestamp);
+      const diffMinutes = (now.getTime() - messageTime.getTime()) / 60000;
+
+      if (diffMinutes > 5) {
+        console.error("Message can only be edited within 5 minutes of sending");
+        return;
+      }
+
+      // Update in Supabase
+      const { error } = await supabase
+        .from("chat_messages")
+        .update({
+          content: newContent,
+          is_edited: true,
+          edited_at: new Date().toISOString(),
+        })
+        .eq("id", messageId);
+
+      if (error) {
+        console.error("Error editing message:", error);
+        return;
+      }
+
+      // Update local state
+      setMessages((prev) => ({
+        ...prev,
+        [selectedConversationId]: prev[selectedConversationId].map((msg) =>
+          msg.id === messageId
+            ? {
+                ...msg,
+                content: newContent,
+                isEdited: true,
+                editedAt: new Date(),
+              }
+            : msg
+        ),
+      }));
+    } catch (error) {
+      console.error("Error in handleEditMessage:", error);
+    }
+  }, [currentMessages, selectedConversationId]);
+
   const chatTitle = currentMember?.name || "채팅";
   const memberCount = selectedMemberId === "group" ? members.length - 1 : undefined;
   const typingNames = Array.from(typingUsers)
@@ -392,6 +442,7 @@ export default function ChatPage() {
           typingNames={typingNames}
           lastReadMessageId={lastReadMessageId[selectedConversationId]}
           onLastVisibleMessage={handleLastVisibleMessage}
+          onEdit={handleEditMessage}
         />
         
         <ChatInput

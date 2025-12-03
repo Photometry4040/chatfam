@@ -20,6 +20,8 @@ export interface Message {
   isOwn: boolean;
   isRead?: boolean;
   reactions?: Record<string, Reaction>; // emoji -> Reaction mapping
+  isEdited?: boolean;
+  editedAt?: Date;
 }
 
 interface ChatMessageProps {
@@ -27,6 +29,7 @@ interface ChatMessageProps {
   showSender?: boolean;
   onReact?: (messageId: string, emoji: string) => void;
   onRemoveReaction?: (messageId: string, emoji: string) => void;
+  onEdit?: (messageId: string, newContent: string) => void;
 }
 
 function formatTime(date: Date): string {
@@ -56,12 +59,16 @@ export default function ChatMessage({
   message,
   showSender = true,
   onReact,
-  onRemoveReaction
+  onRemoveReaction,
+  onEdit
 }: ChatMessageProps) {
   const [showReactionMenu, setShowReactionMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(message.content);
   const messageRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const editInputRef = useRef<HTMLTextAreaElement>(null);
 
   const initials = message.senderName
     .split(" ")
@@ -69,6 +76,15 @@ export default function ChatMessage({
     .join("")
     .toUpperCase()
     .slice(0, 2);
+
+  // Check if message can be edited (within 5 minutes and is own message)
+  const canEdit = (): boolean => {
+    if (!message.isOwn) return false;
+    const now = new Date();
+    const messageTime = new Date(message.timestamp);
+    const diffMinutes = (now.getTime() - messageTime.getTime()) / 60000;
+    return diffMinutes <= 5;
+  };
 
   // Handle context menu
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -86,6 +102,25 @@ export default function ChatMessage({
       onReact?.(message.id, emoji);
     }
     setShowReactionMenu(false);
+  };
+
+  // Handle edit mode
+  const handleEditStart = () => {
+    setIsEditing(true);
+    setEditContent(message.content);
+    setTimeout(() => editInputRef.current?.focus(), 0);
+  };
+
+  const handleEditCancel = () => {
+    setIsEditing(false);
+    setEditContent(message.content);
+  };
+
+  const handleEditSave = () => {
+    if (editContent.trim() && editContent !== message.content) {
+      onEdit?.(message.id, editContent.trim());
+    }
+    setIsEditing(false);
   };
 
   // Close menu when clicking outside
@@ -143,21 +178,75 @@ export default function ChatMessage({
           )}
           onContextMenu={handleContextMenu}
         >
-          <p className="text-base whitespace-pre-wrap">{message.content}</p>
+          {isEditing ? (
+            <div className="flex flex-col gap-2">
+              <textarea
+                ref={editInputRef}
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                className={cn(
+                  "w-full resize-none rounded p-2 text-base",
+                  message.isOwn
+                    ? "bg-primary/80 text-primary-foreground"
+                    : "bg-muted text-foreground"
+                )}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && e.ctrlKey) {
+                    handleEditSave();
+                  }
+                  if (e.key === "Escape") {
+                    handleEditCancel();
+                  }
+                }}
+              />
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={handleEditCancel}
+                  className="text-xs px-2 py-1 rounded opacity-70 hover:opacity-100"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleEditSave}
+                  className="text-xs px-2 py-1 rounded bg-accent hover:bg-accent/80"
+                >
+                  저장
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-2">
+                <p className="text-base whitespace-pre-wrap flex-1">{message.content}</p>
+                {message.isEdited && (
+                  <span className="text-xs opacity-70">(수정됨)</span>
+                )}
+              </div>
 
-          {/* Quick reaction buttons on hover */}
-          <div className="absolute -right-16 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 pointer-events-none group-hover:pointer-events-auto">
-            {COMMON_EMOJIS.slice(0, 3).map((emoji) => (
-              <button
-                key={emoji}
-                onClick={() => handleEmojiSelect(emoji)}
-                className="p-1 rounded-full hover:bg-muted text-lg"
-                title={`Add ${emoji} reaction`}
-              >
-                {emoji}
-              </button>
-            ))}
-          </div>
+              {/* Quick reaction buttons & edit button on hover */}
+              <div className="absolute -right-16 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 pointer-events-none group-hover:pointer-events-auto">
+                {canEdit() && (
+                  <button
+                    onClick={handleEditStart}
+                    className="p-1 rounded-full hover:bg-muted text-sm"
+                    title="Edit message (5 minutes left)"
+                  >
+                    ✏️
+                  </button>
+                )}
+                {COMMON_EMOJIS.slice(0, 3).map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => handleEmojiSelect(emoji)}
+                    className="p-1 rounded-full hover:bg-muted text-lg"
+                    title={`Add ${emoji} reaction`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Display reactions */}
