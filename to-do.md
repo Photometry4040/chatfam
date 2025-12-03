@@ -25,16 +25,28 @@
   - 불필요한 프로필 UPDATE 로직 제거
 
 **관련 커밋:**
-- `2780881` - Fix emoji 404 errors
-- `25478fa` - Fix message alignment by using sender_profile_id
-- `f5a34d3` - Clean up console logs
-- `537b227` - Fix PATCH 403 Forbidden error
-- `b8fc83e` - Fix sender name display by using correct profile lookup
-- `8cd0279` - Clean up debug logs - remove temporary debugging output
+- Phase 1 (메시지 정렬 및 발신자 표시):
+  - `2780881` - Fix emoji 404 errors
+  - `25478fa` - Fix message alignment by using sender_profile_id
+  - `f5a34d3` - Clean up console logs
+  - `537b227` - Fix PATCH 403 Forbidden error
+  - `b8fc83e` - Fix sender name display by using correct profile lookup
+  - `8cd0279` - Clean up debug logs - remove temporary debugging output
+- Phase 2 (실시간 상호작용 기능):
+  - `b6046d1` - Implement message read status tracking with IntersectionObserver
+  - `48947e6` - Add emoji reaction UI with context menu
+  - `50d9fdf` - Implement message editing with 5-minute limit
+  - `5060b4b` - Implement message reply feature
+  - `0af5a62` - Implement emoji reaction database persistence and real-time sync
+  - `671a5d7` - Implement unread message badges and browser notifications
+  - `3de20d2` - Fix unread message persistence - update database when marking as read
+  - `92ebea7` - Fix new messages not being marked as read
+  - `0e7cd3b` - Implement per-user conversation read status tracking
+  - `67ba9b2` - Implement per-device member selection persistence using localStorage
 
 ---
 
-## 🔥 Phase 2: 실시간 상호작용 기능 추가 (진행 중)
+## ✅ Phase 2: 실시간 상호작용 기능 추가 (완료!)
 
 ### Phase 2: 실용적인 기능 추가 (추천 순서)
 
@@ -245,18 +257,36 @@
   - Real-time 구독으로 즉시 반영
   - 반응한 사람 목록 tooltip 표시
   - Commit: `0af5a62`
+- 읽지 않은 메시지 추적 및 알림 - ✅ **완료** (배지 + 브라우저 알림)
+  - 각 대화별 읽지 않은 메시지 배지 표시
+  - 헤더에 전체 미읽 메시지 배지
+  - 탭 백그라운드 시 브라우저 알림
+  - 페이지 제목 배지 표시 (Page Visibility API)
+  - Commit: `671a5d7`
+- 구성원별 읽음 상태 추적 - ✅ **완료** (Per-user read status)
+  - `chat_conversation_read_status` 테이블로 사용자별 추적
+  - 각 구성원마다 다른 미읽 개수 표시
+  - 마지막 읽은 메시지 ID 저장으로 정확한 추적
+  - Commit: `0e7cd3b`
+- 구성원 선택 저장 (localStorage) - ✅ **완료** (Per-device persistence)
+  - 각 기기가 선택한 구성원 자동 저장
+  - 앱 재시작해도 같은 구성원으로 시작
+  - PWA 환경에서 최적화된 경험
+  - Commit: `67ba9b2`
 
 🌐 **배포 상태:**
-- GitHub: ✅ 최신 커밋 푸시됨 (`671a5d7`)
-- Vercel: ✅ 자동 배포 진행 중
-- 배포된 앱: Phase 2 기능 (6가지) 모두 정상 작동 ✅
+- GitHub: ✅ 최신 커밋 푸시됨 (`67ba9b2`)
+- Vercel: ✅ 자동 배포 완료
+- 배포된 앱: Phase 2 기능 (8가지) 모두 정상 작동 ✅
 
 **📌 작업 진행도:**
 - Phase 1: 100% ✅ (6개 기능 완료)
-- Phase 2: 100% ✅ (6개 기능 완료)
+- Phase 2: 100% ✅ (8개 기능 완료)
   - ✅ 메시지 읽음 표시 개선
   - ✅ 이모지 반응 (UI)
   - ✅ 메시지 편집 (5분 제한)
   - ✅ 메시지 답장 (부모 메시지 미리보기)
   - ✅ 이모지 반응 고도화 (DB + Real-time)
   - ✅ 읽지 않은 메시지 추적 및 알림 (배지 + 브라우저 알림)
+  - ✅ 구성원별 읽음 상태 추적 (Per-user read status)
+  - ✅ 구성원 선택 저장 (Per-device persistence)
