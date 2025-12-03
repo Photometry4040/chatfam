@@ -25,6 +25,13 @@ export interface FamilyMember {
   lastMessage?: string;
 }
 
+export interface Reaction {
+  emoji: string;
+  count: number;
+  reactedByCurrentUser: boolean;
+  userNames?: string[];
+}
+
 export interface Message {
   id: string;
   content: string;
@@ -37,7 +44,7 @@ export interface Message {
   isEdited?: boolean;
   editedAt?: Date;
   isDeleted?: boolean;
-  reactions?: Record<string, string[]>;
+  reactions?: Record<string, Reaction>;
   isPinned?: boolean;
   parentMessageId?: string;
   parentMessage?: Message;

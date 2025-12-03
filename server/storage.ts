@@ -167,19 +167,13 @@ export class MemStorage implements IStorage {
   }
 
   async addReaction(messageId: string, roomId: string, emoji: string, userId: string): Promise<void> {
+    // Note: reactions are now stored in Supabase, not in memory
+    // This method is kept for backward compatibility but not actively used
     const roomMessages = this.messages.get(roomId) || [];
     const message = roomMessages.find((m) => m.id === messageId);
 
-    if (message) {
-      if (!message.reactions) {
-        message.reactions = {};
-      }
-      if (!message.reactions[emoji]) {
-        message.reactions[emoji] = [];
-      }
-      if (!message.reactions[emoji].includes(userId)) {
-        message.reactions[emoji].push(userId);
-      }
+    if (message && !message.reactions) {
+      message.reactions = {};
     }
   }
 

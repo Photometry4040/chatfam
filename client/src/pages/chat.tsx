@@ -314,6 +314,7 @@ export default function ChatPage() {
         isOwn,
         parentMessageId: m.parentMessageId,
         parentMessage,
+        reactions: m.reactions,
       };
     });
 
@@ -323,6 +324,29 @@ export default function ChatPage() {
       [conversationId]: formattedMessages,
     }));
   }, [selectedMemberId]);
+
+  // Helper function to transform reactions
+  const transformReactions = (reactions: any[], userId: string) => {
+    const reactionMap: Record<string, any> = {};
+    for (const reaction of reactions) {
+      if (!reactionMap[reaction.emoji]) {
+        reactionMap[reaction.emoji] = {
+          emoji: reaction.emoji,
+          count: 0,
+          reactedByCurrentUser: false,
+          userNames: [],
+        };
+      }
+      reactionMap[reaction.emoji].count++;
+      if (reaction.user_id === userId) {
+        reactionMap[reaction.emoji].reactedByCurrentUser = true;
+      }
+      if (reaction.display_name && !reactionMap[reaction.emoji].userNames?.includes(reaction.display_name)) {
+        reactionMap[reaction.emoji].userNames?.push(reaction.display_name);
+      }
+    }
+    return reactionMap;
+  };
 
   const { isConnected, sendMessage, sendTyping } = useSupabaseRealtime({
     familyGroupId: FAMILY_GROUP_ID,
@@ -345,6 +369,38 @@ export default function ChatPage() {
           return newSet;
         });
       }, 3000);
+    },
+    onReactionChange: (payload: any) => {
+      // Handle reaction changes from realtime
+      const messageId = payload.new?.message_id || payload.old?.message_id;
+      if (!messageId) return;
+
+      // Fetch updated reactions for this message
+      supabase
+        .from("chat_message_reactions")
+        .select(`
+          message_id,
+          emoji,
+          user_id,
+          chat_profiles!sender_profile_id(display_name)
+        `)
+        .eq("message_id", messageId)
+        .then(({ data: reactionsData }) => {
+          const reactions: any[] = (reactionsData || []).map((r: any) => ({
+            emoji: r.emoji,
+            user_id: r.user_id,
+            display_name: r.chat_profiles?.display_name,
+          }));
+
+          const reactionMap = transformReactions(reactions, currentUserId);
+
+          setMessages((prev) => ({
+            ...prev,
+            [selectedConversationId]: prev[selectedConversationId].map((msg) =>
+              msg.id === messageId ? { ...msg, reactions: reactionMap } : msg
+            ),
+          }));
+        });
     },
   });
 
@@ -469,6 +525,124 @@ export default function ChatPage() {
     }
   }, [currentMessages]);
 
+  // Handle adding a reaction
+  const handleReact = useCallback(async (messageId: string, emoji: string) => {
+    try {
+      // Optimistically update local state
+      setMessages((prev) => ({
+        ...prev,
+        [selectedConversationId]: prev[selectedConversationId].map((msg) => {
+          if (msg.id === messageId) {
+            const reactions = msg.reactions ? { ...msg.reactions } : {};
+            if (!reactions[emoji]) {
+              reactions[emoji] = {
+                emoji,
+                count: 0,
+                reactedByCurrentUser: false,
+                userNames: [],
+              };
+            }
+            reactions[emoji].count++;
+            reactions[emoji].reactedByCurrentUser = true;
+            if (currentUserName && reactions[emoji].userNames && !reactions[emoji].userNames.includes(currentUserName)) {
+              reactions[emoji].userNames.push(currentUserName);
+            }
+            return { ...msg, reactions };
+          }
+          return msg;
+        }),
+      }));
+
+      // Save to Supabase
+      const { error } = await supabase
+        .from("chat_message_reactions")
+        .insert({
+          message_id: messageId,
+          user_id: currentUserId,
+          sender_profile_id: selectedMemberId,
+          emoji,
+        });
+
+      if (error) {
+        console.error("Error adding reaction:", error);
+        // Revert optimistic update if error
+        setMessages((prev) => ({
+          ...prev,
+          [selectedConversationId]: prev[selectedConversationId].map((msg) => {
+            if (msg.id === messageId && msg.reactions?.[emoji]) {
+              const reactions = { ...msg.reactions };
+              reactions[emoji].count--;
+              reactions[emoji].reactedByCurrentUser = false;
+              if (reactions[emoji].userNames) {
+                reactions[emoji].userNames = reactions[emoji].userNames!.filter(n => n !== currentUserName);
+              }
+              if (reactions[emoji].count === 0) {
+                delete reactions[emoji];
+              }
+              return { ...msg, reactions };
+            }
+            return msg;
+          }),
+        }));
+      }
+    } catch (error) {
+      console.error("Error in handleReact:", error);
+    }
+  }, [selectedConversationId, currentUserId, selectedMemberId, currentUserName]);
+
+  // Handle removing a reaction
+  const handleRemoveReaction = useCallback(async (messageId: string, emoji: string) => {
+    try {
+      // Optimistically update local state
+      setMessages((prev) => ({
+        ...prev,
+        [selectedConversationId]: prev[selectedConversationId].map((msg) => {
+          if (msg.id === messageId && msg.reactions?.[emoji]) {
+            const reactions = { ...msg.reactions };
+            reactions[emoji].count--;
+            reactions[emoji].reactedByCurrentUser = false;
+            if (reactions[emoji].userNames) {
+              reactions[emoji].userNames = reactions[emoji].userNames!.filter(n => n !== currentUserName);
+            }
+            if (reactions[emoji].count === 0) {
+              delete reactions[emoji];
+            }
+            return { ...msg, reactions };
+          }
+          return msg;
+        }),
+      }));
+
+      // Remove from Supabase
+      const { error } = await supabase
+        .from("chat_message_reactions")
+        .delete()
+        .eq("message_id", messageId)
+        .eq("user_id", currentUserId)
+        .eq("emoji", emoji);
+
+      if (error) {
+        console.error("Error removing reaction:", error);
+        // Revert optimistic update if error
+        const messageToFix = currentMessages.find(m => m.id === messageId);
+        if (messageToFix?.reactions?.[emoji]) {
+          setMessages((prev) => ({
+            ...prev,
+            [selectedConversationId]: prev[selectedConversationId].map((msg) => {
+              if (msg.id === messageId) {
+                const reactions = messageToFix.reactions ? { ...messageToFix.reactions } : {};
+                return { ...msg, reactions };
+              }
+              return msg;
+            }),
+          }));
+        }
+      }
+    } catch (error) {
+      console.error("Error in handleRemoveReaction:", error);
+    }
+  }, [selectedConversationId, currentUserId, currentUserName, currentMessages]);
+
   const chatTitle = currentMember?.name || "채팅";
   const memberCount = selectedMemberId === "group" ? members.length - 1 : undefined;
   const typingNames = Array.from(typingUsers)
@@ -516,6 +690,8 @@ export default function ChatPage() {
           onLastVisibleMessage={handleLastVisibleMessage}
           onEdit={handleEditMessage}
           onReply={handleReplyTo}
+          onReact={handleReact}
+          onRemoveReaction={handleRemoveReaction}
         />
 
         <ChatInput

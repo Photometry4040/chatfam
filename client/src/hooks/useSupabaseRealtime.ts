@@ -1,6 +1,37 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import type { Message } from "@shared/schema";
+import type { Message, Reaction } from "@shared/schema";
+
+// Helper function to transform reaction rows to Reaction format
+function transformReactions(
+  reactions: any[],
+  currentUserId: string
+): Record<string, Reaction> {
+  const reactionMap: Record<string, Reaction> = {};
+
+  for (const reaction of reactions) {
+    if (!reactionMap[reaction.emoji]) {
+      reactionMap[reaction.emoji] = {
+        emoji: reaction.emoji,
+        count: 0,
+        reactedByCurrentUser: false,
+        userNames: [],
+      };
+    }
+
+    reactionMap[reaction.emoji].count++;
+
+    if (reaction.user_id === currentUserId) {
+      reactionMap[reaction.emoji].reactedByCurrentUser = true;
+    }
+
+    if (reaction.display_name && !reactionMap[reaction.emoji].userNames?.includes(reaction.display_name)) {
+      reactionMap[reaction.emoji].userNames?.push(reaction.display_name);
+    }
+  }
+
+  return reactionMap;
+}
 
 interface UseSupabaseRealtimeOptions {
   familyGroupId: string;
@@ -11,6 +42,7 @@ interface UseSupabaseRealtimeOptions {
   onMessage: (message: Message) => void;
   onRoomHistory: (roomId: string, messages: Message[]) => void;
   onTyping?: (userId: string, userName: string) => void;
+  onReactionChange?: (payload: any) => void;
 }
 
 export function useSupabaseRealtime({
@@ -22,16 +54,17 @@ export function useSupabaseRealtime({
   onMessage,
   onRoomHistory,
   onTyping,
+  onReactionChange,
 }: UseSupabaseRealtimeOptions) {
   const [isConnected, setIsConnected] = useState(false);
   const subscriptionsRef = useRef<any[]>([]);
-  const callbacksRef = useRef({ onMessage, onRoomHistory, onTyping });
+  const callbacksRef = useRef({ onMessage, onRoomHistory, onTyping, onReactionChange });
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Keep callbacks updated
   useEffect(() => {
-    callbacksRef.current = { onMessage, onRoomHistory, onTyping };
-  }, [onMessage, onRoomHistory, onTyping]);
+    callbacksRef.current = { onMessage, onRoomHistory, onTyping, onReactionChange };
+  }, [onMessage, onRoomHistory, onTyping, onReactionChange]);
 
   // Setup Realtime subscriptions
   const setupSubscriptions = useCallback(async () => {
@@ -68,12 +101,42 @@ export function useSupabaseRealtime({
 
       // Fetch messages and then get sender names from family group profiles
       const messagesWithNames: Message[] = [];
+      const messageIds = (messages || []).map(m => m.id);
+
+      // Fetch all reactions for these messages
+      const { data: reactionsData } = messageIds.length > 0
+        ? await supabase
+            .from("chat_message_reactions")
+            .select(`
+              message_id,
+              emoji,
+              user_id,
+              chat_profiles!sender_profile_id(display_name)
+            `)
+            .in("message_id", messageIds)
+        : { data: [] };
+
+      // Group reactions by message_id
+      const reactionsByMessageId: Record<string, any[]> = {};
+      (reactionsData || []).forEach((reaction: any) => {
+        if (!reactionsByMessageId[reaction.message_id]) {
+          reactionsByMessageId[reaction.message_id] = [];
+        }
+        reactionsByMessageId[reaction.message_id].push({
+          emoji: reaction.emoji,
+          user_id: reaction.user_id,
+          display_name: reaction.chat_profiles?.display_name,
+        });
+      });
+
       for (const msg of messages || []) {
         const { data: profile } = await supabase
           .from("chat_profiles")
           .select("id, display_name, avatar_emoji")
           .eq("id", msg.sender_profile_id)
           .single();
+
+        const messageReactions = transformReactions(reactionsByMessageId[msg.id] || [], userId);
 
         messagesWithNames.push({
           id: msg.id,
@@ -87,6 +150,7 @@ export function useSupabaseRealtime({
           editedAt: msg.edited_at ? new Date(msg.edited_at) : undefined,
           isDeleted: false,
           parentMessageId: msg.parent_message_id,
+          reactions: messageReactions,
         });
       }
       const formattedMessages = messagesWithNames;
@@ -169,7 +233,23 @@ export function useSupabaseRealtime({
           // console.log(`Typing subscription status: ${status}`);
         });
 
-      subscriptionsRef.current = [messagesSubscription, typingSubscription];
+      // Subscribe to reaction changes
+      const reactionsSubscription = supabase
+        .channel(`reactions:${familyGroupId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "chat_message_reactions",
+          },
+          (payload: any) => {
+            callbacksRef.current.onReactionChange?.(payload);
+          }
+        )
+        .subscribe();
+
+      subscriptionsRef.current = [messagesSubscription, typingSubscription, reactionsSubscription];
     } catch (error) {
       console.error("Error setting up subscriptions:", error);
       setIsConnected(false);
