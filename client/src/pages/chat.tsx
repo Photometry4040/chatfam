@@ -68,6 +68,7 @@ export default function ChatPage() {
   const [selectedConversationId, setSelectedConversationId] = useState<string>("")
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastReadMessageId, setLastReadMessageId] = useState<Record<string, string>>({}); // Track last read message per conversation
 
   // Get current user info and initialize selected member
   useEffect(() => {
@@ -336,6 +337,16 @@ export default function ChatPage() {
     }
   }, [members]);
 
+  // Track last visible message in the list
+  const handleLastVisibleMessage = useCallback((messageId: string | null) => {
+    if (messageId && selectedConversationId) {
+      setLastReadMessageId((prev) => ({
+        ...prev,
+        [selectedConversationId]: messageId,
+      }));
+    }
+  }, [selectedConversationId]);
+
   const chatTitle = currentMember?.name || "채팅";
   const memberCount = selectedMemberId === "group" ? members.length - 1 : undefined;
   const typingNames = Array.from(typingUsers)
@@ -375,10 +386,12 @@ export default function ChatPage() {
           resultCount={filteredMessages.length}
         />
         
-        <MessageList 
+        <MessageList
           messages={filteredMessages}
           typingUsers={Array.from(typingUsers)}
           typingNames={typingNames}
+          lastReadMessageId={lastReadMessageId[selectedConversationId]}
+          onLastVisibleMessage={handleLastVisibleMessage}
         />
         
         <ChatInput

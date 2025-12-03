@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import ChatMessage, { type Message } from "./ChatMessage";
 import DateSeparator from "./DateSeparator";
 import EmptyChat from "./EmptyChat";
@@ -7,6 +7,8 @@ interface MessageListProps {
   messages: Message[];
   typingUsers?: string[];
   typingNames?: (string | undefined)[];
+  lastReadMessageId?: string;
+  onLastVisibleMessage?: (messageId: string | null) => void;
 }
 
 function isSameDay(date1: Date, date2: Date): boolean {
@@ -17,9 +19,85 @@ function isSameDay(date1: Date, date2: Date): boolean {
   );
 }
 
-export default function MessageList({ messages, typingUsers = [], typingNames = [] }: MessageListProps) {
+export default function MessageList({
+  messages,
+  typingUsers = [],
+  typingNames = [],
+  lastReadMessageId,
+  onLastVisibleMessage
+}: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const messageRefsMap = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  // Setup IntersectionObserver for tracking visible messages
+  useEffect(() => {
+    if (!containerRef.current || !onLastVisibleMessage) return;
+
+    const observerOptions: IntersectionObserverInit = {
+      root: containerRef.current,
+      rootMargin: "0px",
+      threshold: [0, 0.25, 0.5, 0.75, 1],
+    };
+
+    let lastVisibleMessageId: string | null = null;
+
+    observerRef.current = new IntersectionObserver(
+      (entries: IntersectionObserverEntry[]) => {
+        // Find the last visible entry (bottom-most message)
+        let bottomMostMessageId: string | null = null;
+        let bottomMostPosition = -Infinity;
+
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const element = entry.target as HTMLDivElement;
+            const messageId = element.getAttribute("data-message-id");
+
+            // Track the message that's at the bottom of the view
+            if (messageId && entry.boundingClientRect.bottom > bottomMostPosition) {
+              bottomMostPosition = entry.boundingClientRect.bottom;
+              bottomMostMessageId = messageId;
+            }
+          }
+        });
+
+        if (bottomMostMessageId && bottomMostMessageId !== lastVisibleMessageId) {
+          lastVisibleMessageId = bottomMostMessageId;
+          onLastVisibleMessage(bottomMostMessageId);
+        }
+      },
+      observerOptions
+    );
+
+    // Observe all message refs
+    messageRefsMap.current.forEach((ref) => {
+      if (observerRef.current) {
+        observerRef.current.observe(ref);
+      }
+    });
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [onLastVisibleMessage, messages.length]);
+
+  const registerMessageRef = useCallback((messageId: string, element: HTMLDivElement | null) => {
+    if (element) {
+      messageRefsMap.current.set(messageId, element);
+      if (observerRef.current) {
+        observerRef.current.observe(element);
+      }
+    } else {
+      const ref = messageRefsMap.current.get(messageId);
+      if (ref && observerRef.current) {
+        observerRef.current.unobserve(ref);
+      }
+      messageRefsMap.current.delete(messageId);
+    }
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -54,12 +132,20 @@ export default function MessageList({ messages, typingUsers = [], typingNames = 
               const prevMessage = messageIndex > 0 ? group.messages[messageIndex - 1] : null;
               const showSender = !prevMessage || prevMessage.senderProfileId !== message.senderProfileId;
 
+              // Determine if message has been read
+              const isRead = lastReadMessageId ? message.id <= lastReadMessageId : false;
+
               return (
-                <ChatMessage
+                <div
                   key={message.id}
-                  message={message}
-                  showSender={showSender}
-                />
+                  ref={(el) => registerMessageRef(message.id, el)}
+                  data-message-id={message.id}
+                >
+                  <ChatMessage
+                    message={{ ...message, isRead }}
+                    showSender={showSender}
+                  />
+                </div>
               );
             })}
           </div>
