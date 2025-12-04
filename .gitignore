@@ -48,5 +48,7 @@ replit.nix
 .env*.local
 
 # Internal documentation (contains personal information)
+.claude/
 CLAUDE.md
+VERCEL_DEPLOYMENT.md
 replit.md

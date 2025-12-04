@@ -246,6 +246,45 @@ Reconnecting in 2000ms (attempt 2/10)...
 - **간격**: 일관된 8px 기본 간격 시스템
 - **애니메이션**: Framer Motion을 사용한 부드러운 전환
 
+## ⚠️ 보안 주의사항
+
+이 프로젝트는 **가족 전용 프로토타입**으로 설계되었습니다.
+
+### 이 코드를 자신의 환경에 배포할 경우 반드시 다음을 수행하세요:
+
+- [ ] **Supabase RLS 정책 설정**
+  - 테이블별 Row Level Security 정책 활성화
+  - 사용자별 접근 제어 구현
+
+- [ ] **환경 변수 설정**
+  - `SESSION_SECRET` 환경 변수 필수 설정 (최소 32자)
+  - 절대 소스코드에 하드코딩하지 마세요
+
+- [ ] **비밀번호 보안**
+  - 비밀번호는 bcrypt 등으로 해싱하여 저장
+  - 평문 비밀번호 저장 금지
+
+- [ ] **API 인증**
+  - JWT 토큰 기반 인증 구현
+  - 모든 API 엔드포인트에 인증 미들웨어 추가
+
+- [ ] **Supabase Authentication**
+  - 사용자 인증 시스템 설정
+  - Auth 토큰을 이용한 WebSocket 연결 검증
+
+### 개발 환경 설정
+
+`.env.local` 파일을 생성하여 환경 변수를 설정하세요:
+
+```env
+VITE_SUPABASE_URL=your-supabase-url
+VITE_SUPABASE_ANON_KEY=your-anon-key
+SESSION_SECRET=your-secret-key-min-32-chars
+NODE_ENV=development
+```
+
+**주의**: `.env.local`과 `.env*` 파일은 `.gitignore`에 의해 Git에 커밋되지 않습니다. 절대 실제 환경 변수를 소스코드에 커밋하지 마세요.
+
 ## 🔄 상태 관리
 
 ### 클라이언트
