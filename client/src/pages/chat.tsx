@@ -7,6 +7,7 @@ import MessageList from "@/components/chat/MessageList";
 import FamilySidebar from "@/components/chat/FamilySidebar";
 import SearchMessages from "@/components/chat/SearchMessages";
 import ConversationHeader from "@/components/chat/ConversationHeader";
+import ProfileSettingsModal from "@/components/chat/ProfileSettingsModal";
 import { useSupabaseRealtime } from "@/hooks/useSupabaseRealtime";
 import { useUnreadBadgeTitle } from "@/hooks/usePageVisibility";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -76,6 +77,8 @@ export default function ChatPage() {
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({}); // Unread count per conversation
   const [totalUnreadCount, setTotalUnreadCount] = useState(0); // Total unread count across all conversations
   const [lastReadMessageIds, setLastReadMessageIds] = useState<Record<string, string>>({}); // Last read message ID per conversation
+  const [isProfileSettingsOpen, setIsProfileSettingsOpen] = useState(false); // Profile settings modal
+  const [settingsProfileId, setSettingsProfileId] = useState<string>(""); // Profile ID to edit in settings modal
 
   // Use hooks for Page Visibility API and Notifications
   useUnreadBadgeTitle(totalUnreadCount);
@@ -593,6 +596,18 @@ export default function ChatPage() {
     }
   }, [members]);
 
+  // Open profile settings modal for a member
+  const handleOpenProfileSettings = useCallback((profileId: string) => {
+    setSettingsProfileId(profileId);
+    setIsProfileSettingsOpen(true);
+  }, []);
+
+  // Handle profile update and refresh member list
+  const handleProfileUpdate = useCallback(() => {
+    // Refresh family members to get updated profile info
+    window.location.reload();
+  }, []);
+
   // Track last visible message in the list
   const handleLastVisibleMessage = useCallback((messageId: string | null) => {
     if (messageId && selectedConversationId) {
@@ -867,6 +882,7 @@ export default function ChatPage() {
         members={members}
         selectedMemberId={selectedMemberId}
         onSelectMember={handleSelectMember}
+        onProfileSettings={handleOpenProfileSettings}
         familyName="우리 가족"
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -917,6 +933,14 @@ export default function ChatPage() {
           onCancelReply={handleCancelReply}
         />
       </div>
+
+      {/* Profile Settings Modal */}
+      <ProfileSettingsModal
+        isOpen={isProfileSettingsOpen}
+        profileId={settingsProfileId}
+        onClose={() => setIsProfileSettingsOpen(false)}
+        onProfileUpdate={handleProfileUpdate}
+      />
     </div>
   );
 }

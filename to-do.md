@@ -1,5 +1,24 @@
 ## 🎉 최근 완료된 작업들
 
+### ✅ Phase 3: 메시지 삭제 및 고정 기능 완성
+- [x] **메시지 삭제** - Hard delete, author-only permission
+  - 파일: `chat.tsx`, `ChatMessage.tsx`
+  - 기능: 본인 메시지만 삭제 가능, 휴지통 버튼 (🗑️)
+- [x] **메시지 고정** - Pin/Unpin functionality
+  - 파일: `MessageList.tsx`, `ChatMessage.tsx`
+  - 기능: 모든 구성원이 메시지 고정 가능, 상단에 별도 섹션 표시
+- [x] 데이터베이스 마이그레이션
+  - `007_add_message_flags.sql` - `is_deleted`, `is_pinned` 컬럼 추가
+  - 인덱스 생성 및 RLS 정책 설정
+- [x] Real-time 동기화
+  - 삭제/고정 변경사항 즉시 반영
+  - 모든 클라이언트에서 일관된 상태 유지
+
+**관련 커밋:**
+- `ce5a873` - Implement message deletion and pinning (16 features total)
+
+---
+
 ### ✅ Phase 1: 다중 대화(Conversation/Thread) 기능 + 메시지 발신자 표시 완성
 - [x] **새로운 대화 시작** 기능 구현
   - 날짜별 대화 스레드 생성 가능 (예: "12월 2일", "12월 3일")
@@ -24,6 +43,42 @@
 - [x] PATCH 403 Forbidden 에러 수정
   - 불필요한 프로필 UPDATE 로직 제거
 
+---
+
+## 🚀 Phase 4: 가족 프로필 커스터마이징 (진행 예정)
+
+### 📋 구현 범위
+- [x] 계획 수립 완료
+- [ ] **아바타 이모지 변경** - TOP 40 이모지 선택 UI
+  - 가족: 👨 👩 🧒 👧 🧑
+  - 동물: 🐱 🐶 🐰 🐼 🐨 🦁 🐯 🐻 🐸
+  - 판타지: 🦄 🧚 👑 💎 ⭐
+  - 음식: 🍕 🍔 🍰 🍪 🍓 🍦
+  - 활동: ⚽ 🏀 🎮 🎸 🎨
+  - 우주: 🚀 🌙 ⭐ 🌈 ✨
+  - 자연: 🌻 🌹 🌸 🌺 🌳
+  - 재미: 🎪 🎠 🎡 🎢 🎉 🎈 🎁
+  - 이모티콘: 😀 😎 🤗 😍 😂 🥰 🤩
+- [ ] **표시 이름 변경** - 이름 입력 필드
+- [ ] **온라인 상태** - Online/Away/Offline/Busy 4가지
+- [ ] **Supabase 연동** - chat_profiles 테이블 업데이트
+- [ ] **실시간 동기화** - 상태 변경 시 즉시 반영
+
+### 📁 구현 파일 (계획)
+- `useProfileSettings.ts` - Supabase 연동 훅
+- `ProfileSettingsModal.tsx` - 프로필 설정 모달
+- `EmojiPicker.tsx` - 이모지 선택 컴포넌트
+- `StatusSelector.tsx` - 온라인 상태 선택
+- `chat.tsx` - 모달 트리거 통합
+
+### 🔮 향후 계획
+- Phase 4.5: 커스텀 아바타 (DiceBear + SVG)
+- Phase 5: 사용자 이미지 업로드 (Supabase Storage)
+
+난이도: ⭐⭐ (중간) | 예상 시간: 2-3시간
+
+---
+
 **관련 커밋:**
 - Phase 1 (메시지 정렬 및 발신자 표시):
   - `2780881` - Fix emoji 404 errors
@@ -43,6 +98,8 @@
   - `92ebea7` - Fix new messages not being marked as read
   - `0e7cd3b` - Implement per-user conversation read status tracking
   - `67ba9b2` - Implement per-device member selection persistence using localStorage
+- Phase 3 (메시지 관리 기능):
+  - `ce5a873` - Implement message deletion and pinning (16 features total)
 
 ---
 
@@ -153,15 +210,15 @@
 ## 🎯 장기 기능 (1개월+)
 
 #### 11. 화상/음성 통화 ⭐⭐⭐
-- [ ] WebRTC 기반 1:1 또는 그룹 통화
-- [ ] Agora, Twilio, LiveKit 등 서비스 연동
-- [ ] "엄마" 선택 → 전화 걸기 버튼
+- [ ] WebRTC 기반 1:1 또는 그룹 통화 - 취소
+- [ ] Agora, Twilio, LiveKit 등 서비스 연동 - 취소
+- [ ] "엄마" 선택 → 전화 걸기 버튼 - 취소
 - 난이도: ⭐⭐⭐⭐⭐ (매우 어려움)
 
 #### 12. AI 번역
-- [ ] 해외 거주 가족을 위한 실시간 번역
-- [ ] Google Translate API, DeepL API
-- [ ] 메시지 옆에 "번역 보기" 버튼
+- [ ] 해외 거주 가족을 위한 실시간 번역 - 취소
+- [ ] Google Translate API, DeepL API - 취소
+- [ ] 메시지 옆에 "번역 보기" 버튼 - 취소
 - 난이도: ⭐⭐⭐ (중상)
 
 #### 13. 가족 앨범/갤러리
@@ -189,8 +246,8 @@
 - 난이도: ⭐⭐⭐⭐ (어려움)
 
 #### 17. 멀티 가족 그룹
-- [ ] 친척 그룹, 친구 그룹 등 여러 개
-- [ ] 그룹 스위칭
+- [ ] 친척 그룹, 친구 그룹 등 여러 개 - 이미 구현, 그룹챗팅임
+- [ ] 그룹 스위칭 - 이미 구현
 - 난이도: ⭐⭐⭐⭐ (어려움)
 
 #### 18. 메시지 백업/내보내기
@@ -232,7 +289,23 @@
 - 콘솔 로그 정리 ✅
 - RLS 정책 에러 수정 ✅
 
-✅ **Phase 2 진행 중 (80% 완료):**
+✅ **Phase 3 완료 (100%):**
+- 메시지 삭제 (Hard Delete) - ✅ **완료**
+  - 본인 메시지만 삭제 가능
+  - 휴지통 버튼 (🗑️) 구현
+  - Commit: `ce5a873`
+- 메시지 고정 (Pin/Unpin) - ✅ **완료**
+  - 모든 구성원이 메시지 고정 가능
+  - 상단 "📌 고정된 메시지" 섹션 표시
+  - Commit: `ce5a873`
+
+🚀 **Phase 4 진행 예정 (가족 프로필 커스터마이징):**
+- [ ] 아바타 이모지 변경 (TOP 40 이모지)
+- [ ] 표시 이름 변경
+- [ ] 온라인 상태 설정 (Online/Away/Offline/Busy)
+- 난이도: ⭐⭐ (중간) | 예상 시간: 2-3시간
+
+✅ **Phase 2 완료 (100%):**
 - 메시지 읽음 표시 개선 - ✅ **완료** (IntersectionObserver 기반)
   - 메시지 스크롤 시 자동으로 ✓✓ 표시
   - 각 대화별로 마지막 읽은 메시지 추적
@@ -275,9 +348,12 @@
   - Commit: `67ba9b2`
 
 🌐 **배포 상태:**
-- GitHub: ✅ 최신 커밋 푸시됨 (`67ba9b2`)
+- GitHub: ✅ 최신 커밋 푸시됨 (`ce5a873`)
 - Vercel: ✅ 자동 배포 완료
-- 배포된 앱: Phase 2 기능 (8가지) 모두 정상 작동 ✅
+- 배포된 앱: Phase 1~3 기능 (16가지) 모두 정상 작동 ✅
+  - Phase 1: 6개 기능 ✅
+  - Phase 2: 8개 기능 ✅
+  - Phase 3: 2개 기능 ✅
 
 **📌 작업 진행도:**
 - Phase 1: 100% ✅ (6개 기능 완료)
@@ -290,3 +366,11 @@
   - ✅ 읽지 않은 메시지 추적 및 알림 (배지 + 브라우저 알림)
   - ✅ 구성원별 읽음 상태 추적 (Per-user read status)
   - ✅ 구성원 선택 저장 (Per-device persistence)
+- Phase 3: 100% ✅ (2개 기능 완료)
+  - ✅ 메시지 삭제 (Hard Delete, author-only)
+  - ✅ 메시지 고정 (Pin/Unpin with dedicated section)
+- Phase 4: 계획 중 🚀 (3개 기능)
+  - [ ] 아바타 이모지 변경 (TOP 40)
+  - [ ] 표시 이름 변경
+  - [ ] 온라인 상태 설정
+- **총 누적: 19개 기능 예정** (Phase 1~4)

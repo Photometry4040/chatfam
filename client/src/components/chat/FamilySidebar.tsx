@@ -10,6 +10,7 @@ interface FamilySidebarProps {
   members: FamilyMember[];
   selectedMemberId?: string;
   onSelectMember: (memberId: string) => void;
+  onProfileSettings?: (profileId: string) => void;
   familyName: string;
   isOpen: boolean;
   onClose: () => void;
@@ -19,6 +20,7 @@ export default function FamilySidebar({
   members,
   selectedMemberId,
   onSelectMember,
+  onProfileSettings,
   familyName,
   isOpen,
   onClose,
@@ -95,6 +97,7 @@ export default function FamilySidebar({
                       onSelectMember(member.id);
                       onClose();
                     }}
+                    onProfileSettings={onProfileSettings}
                   />
                 ))}
               </div>

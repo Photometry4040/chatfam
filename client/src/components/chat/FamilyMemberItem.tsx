@@ -1,5 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { Settings } from "lucide-react";
 
 export interface FamilyMember {
   id: string;
@@ -13,12 +14,14 @@ interface FamilyMemberItemProps {
   member: FamilyMember;
   isSelected?: boolean;
   onClick?: () => void;
+  onProfileSettings?: (memberId: string) => void;
 }
 
-export default function FamilyMemberItem({ 
-  member, 
-  isSelected = false, 
-  onClick 
+export default function FamilyMemberItem({
+  member,
+  isSelected = false,
+  onClick,
+  onProfileSettings
 }: FamilyMemberItemProps) {
   const initials = member.name
     .split(" ")
@@ -62,6 +65,18 @@ export default function FamilyMemberItem({
           </p>
         )}
       </div>
+      {onProfileSettings && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onProfileSettings(member.id);
+          }}
+          className="ml-2 p-2 rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-foreground transition-colors"
+          aria-label={`${member.name} 프로필 설정`}
+        >
+          <Settings className="w-4 h-4" />
+        </button>
+      )}
     </button>
   );
 }
