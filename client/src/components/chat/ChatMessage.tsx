@@ -182,7 +182,7 @@ export default function ChatMessage({
 
         <div
           className={cn(
-            "px-4 py-3 rounded-2xl break-words group cursor-context-menu relative",
+            "px-4 py-3 pb-2 rounded-2xl break-words group cursor-context-menu relative",
             message.isOwn
               ? "bg-primary text-primary-foreground rounded-tr-md"
               : "bg-card border border-card-border rounded-tl-md",
@@ -306,7 +306,7 @@ export default function ChatMessage({
 
         {/* Display reactions */}
         {message.reactions && Object.keys(message.reactions).length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-2 mx-1">
+          <div className="flex flex-wrap gap-1 mt-4 mx-1">
             {Object.values(message.reactions).map((reaction) => (
               <button
                 key={reaction.emoji}
