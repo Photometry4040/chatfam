@@ -251,7 +251,7 @@ export default function ChatMessage({
               </div>
 
               {/* Quick reaction buttons, edit button & reply button on hover */}
-              <div className="absolute -right-20 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 pointer-events-none group-hover:pointer-events-auto">
+              <div className="absolute -right-20 -top-12 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 pointer-events-none group-hover:pointer-events-auto">
                 <button
                   onClick={() => onReply?.(message.id)}
                   className="p-1 rounded-full hover:bg-muted text-sm"
